@@ -1,0 +1,28 @@
+import EditButton from "../components/buttons/EditButton";
+import EditRoom from "./editform/EditRoom";
+import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
+
+function UtilityBills() 
+  const navigate = useNavigate();
+  const [openEditRoom, setOpenEditRoom] = useState();
+
+  <EditButton onClick={() => setOpenEditRoom(true)} />
+
+  {openEditRoom && (
+        <EditRoom onClose={() => setOpenEditRoom(false)} />
+  )}
+
+
+  function EditRoom({ onClose }) {
+
+  return (
+    <div className="fixed inset-0 z-[99] bg-[rgba(0,0,0,0.6)] flex items-center justify-center">
+      <div className="bg-white w-full max-w-lg rounded-lg shadow-lg p-6 relative">
+
+      </div>
+    </div>
+  );
+}
+
+export default EditRoom;
