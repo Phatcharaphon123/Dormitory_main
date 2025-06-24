@@ -57,7 +57,7 @@ function Bills() {
                 : "hover:bg-gray-100"
             }`}
           >
-            บิลรายเดือน
+            บิลรายเดือน/วัน
           </button>
           <button
             onClick={() => setActiveTab("daily")}
