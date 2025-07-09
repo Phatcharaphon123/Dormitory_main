@@ -7,7 +7,7 @@ import RoomTypes from "./pages/Dorminfo/RoomTypes.jsx";
 import Camera from "./pages/notusenow/Camera.jsx";
 import PlusRoomType from "./pages/Dorminfo/AddRoomType.jsx";
 import RoomsManage from "./pages/notusenow/RoomsManage.jsx";
-import Dashboard from "./pages/notusenow/Dashboard.jsx";
+import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import DailyCustomer from "./pages/notusenow/DailyCustomer.jsx";
 import MonthlyCustomer from "./pages/notusenow/MonthlyCustomer.jsx";
 import RoomsPlan from "./pages/RoomPlan/RoomPlan.jsx";
