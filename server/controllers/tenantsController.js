@@ -1,6 +1,6 @@
 const pool = require('../db');
 
-const getTenantFullById = async (req, res) => {
+exports.getTenantFullById = async (req, res) => {
   const { tenantId } = req.params;
   try {
     // 1. ข้อมูลหลัก
@@ -38,7 +38,7 @@ const getTenantFullById = async (req, res) => {
 };
 
 // อัปเดตข้อมูลผู้เช่า (tenants), emergency_contact, vehicles
-const updateTenant = async (req, res) => {
+exports.updateTenant = async (req, res) => {
   const { tenantId } = req.params;
   const {
     first_name, last_name, email, phone_number,
@@ -46,11 +46,6 @@ const updateTenant = async (req, res) => {
     emergency_contact, vehicles, vehicles_to_delete
   } = req.body;
   
-  console.log('🔍 UPDATE TENANT REQUEST:');
-  console.log('  Tenant ID:', tenantId);
-  console.log('  Vehicles received:', vehicles);
-  console.log('  Vehicles to delete received:', vehicles_to_delete);
-  console.log('  Body:', JSON.stringify(req.body, null, 2));
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -174,7 +169,7 @@ const updateTenant = async (req, res) => {
 }
 
 // Get tenant summary statistics for dashboard
-const getTenantSummary = async (req, res) => {
+exports.getTenantSummary = async (req, res) => {
   try {
     const { dormId } = req.params
 
@@ -289,7 +284,7 @@ const getTenantSummary = async (req, res) => {
 }
 
 // Get monthly occupancy data
-const getMonthlyOccupancy = async (req, res) => {
+exports.getMonthlyOccupancy = async (req, res) => {
   try {
     const { dormId } = req.params
     const { year = new Date().getFullYear() } = req.query
@@ -386,7 +381,7 @@ const getMonthlyOccupancy = async (req, res) => {
 }
 
 // Get room types distribution
-const getRoomTypes = async (req, res) => {
+exports.getRoomTypes = async (req, res) => {
   try {
     const { dormId } = req.params
 
@@ -420,7 +415,7 @@ const getRoomTypes = async (req, res) => {
 }
 
 // Get contract status distribution
-const getContractStatus = async (req, res) => {
+exports.getContractStatus = async (req, res) => {
   try {
     const { dormId } = req.params
 
@@ -475,13 +470,4 @@ const getContractStatus = async (req, res) => {
       error: error.message
     })
   }
-}
-
-module.exports = {
-  updateTenant,
-  getTenantFullById,
-  getTenantSummary,
-  getMonthlyOccupancy,
-  getRoomTypes,
-  getContractStatus
 }

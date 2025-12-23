@@ -1,12 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const moveOutReceiptController = require('../controllers/moveOutReceiptController');
+const {
+  getMoveOutReceiptData,
+  getMoveOutReceiptById,
+  getMoveOutReceiptsByMonth
+} = require('../controllers/moveOutReceiptController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 /* ─────────────── 🔹 ใบเสร็จย้ายออก ─────────────── */
 
 // ดึงใบเสร็จย้ายออกตาม ID
-router.get('/:moveOutReceiptId', authMiddleware, moveOutReceiptController.getMoveOutReceiptById);
+router.get('/:moveOutReceiptId', authMiddleware, getMoveOutReceiptById);
 
 // Route สำหรับทดสอบ
 router.get('/test', (req, res) => {
@@ -15,9 +19,9 @@ router.get('/test', (req, res) => {
 });
 
 // ดึงใบเสร็จย้ายออกตามเดือน
-router.get('/dormitories/:dormId', authMiddleware, moveOutReceiptController.getMoveOutReceiptsByMonth);
+router.get('/dormitories/:dormId', authMiddleware, getMoveOutReceiptsByMonth);
 
 // ดึงข้อมูลใบเสร็จย้ายออกตามห้อง
-router.get('/dormitories/:dormId/rooms/:roomNumber', authMiddleware, moveOutReceiptController.getMoveOutReceiptData);
+router.get('/dormitories/:dormId/rooms/:roomNumber', authMiddleware, getMoveOutReceiptData);
 
 module.exports = router;

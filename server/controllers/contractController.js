@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // 📄 สร้างสัญญาใหม่พร้อมข้อมูลผู้เช่า
-const createContract = async (req, res) => {
+exports.createContract = async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -25,8 +25,6 @@ const createContract = async (req, res) => {
     } = req.body;
 
     await client.query('BEGIN');
-
-    console.log('🔍 ข้อมูลที่ได้รับ:', req.body);
 
     // 1. ดึงข้อมูลห้องพัก
     const roomResult = await client.query(
@@ -134,7 +132,7 @@ const createContract = async (req, res) => {
 };
 
 // 📥 ดึงสัญญาทั้งหมดของหอพัก
-const getContractsByDorm = async (req, res) => {
+exports.getContractsByDorm = async (req, res) => {
   try {
     const { dormId } = req.params;
     
@@ -175,7 +173,7 @@ const getContractsByDorm = async (req, res) => {
 };
 
 // 📥 ดึงรายละเอียดสัญญาเฉพาะ
-const getContractDetail = async (req, res) => {
+exports.getContractDetail = async (req, res) => {
   try {
     const { contractId } = req.params;
     
@@ -226,7 +224,7 @@ const getContractDetail = async (req, res) => {
 };
 
 // 🏠 ดึงสัญญาของห้องเฉพาะ
-const getContractByRoom = async (req, res) => {
+exports.getContractByRoom = async (req, res) => {
   try {
     const { dormId, roomNumber } = req.params;
     
@@ -303,7 +301,7 @@ const getContractByRoom = async (req, res) => {
   }
 };
 
-const updateContract = async (req, res) => {
+exports.updateContract = async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -377,10 +375,8 @@ const updateContract = async (req, res) => {
   }
 };
 
-
-
 // 🚪 ยกเลิกสัญญา/ย้ายออก (รวมข้อมูล termination และ move_out_receipt)
-const terminateContract = async (req, res) => {
+exports.terminateContract = async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -396,14 +392,6 @@ const terminateContract = async (req, res) => {
       depositRefund = 0,
       isDepositRefund = false
     } = req.body;
-
-    console.log('📥 รับข้อมูล terminate contract:', {
-      contractId,
-      termination_date,
-      adjustments: adjustments.length,
-      paymentMethod,
-      finalAmount
-    });
 
     await client.query('BEGIN');
 
@@ -530,7 +518,7 @@ const terminateContract = async (req, res) => {
 };
 
 // 📋 ดึงรายการสัญญาที่ยกเลิกแล้ว (Terminated Contracts)
-const getTerminatedContracts = async (req, res) => {
+exports.getTerminatedContracts = async (req, res) => {
   try {
     const { dormId } = req.params;
     
@@ -562,7 +550,7 @@ const getTerminatedContracts = async (req, res) => {
 };
 
 // 📋 ดึงรายละเอียดสัญญาที่ยกเลิกแล้ว
-const getTerminatedContractDetail = async (req, res) => {
+exports.getTerminatedContractDetail = async (req, res) => {
   try {
     const { contractId } = req.params;
     
@@ -675,7 +663,7 @@ const getTerminatedContractDetail = async (req, res) => {
   }
 };
 
-const getMoveoutList = async (req, res) => {
+exports.getMoveoutList = async (req, res) => {
   try {
     const { dormId } = req.params;
     
@@ -704,7 +692,7 @@ const getMoveoutList = async (req, res) => {
   }
 };
 
-const cancelMoveoutNotice = async (req, res) => {
+exports.cancelMoveoutNotice = async (req, res) => {
   const { contractId } = req.params;
 
   try {
@@ -736,7 +724,7 @@ const cancelMoveoutNotice = async (req, res) => {
 /* ─────────────── 🔹 CONTRACT SERVICES FUNCTIONS ─────────────── */
 
 // ดึงบริการรายเดือนของสัญญา
-const getContractServices = async (req, res) => {
+exports.getContractServices = async (req, res) => {
   try {
     const { contractId } = req.params;
     
@@ -760,7 +748,7 @@ const getContractServices = async (req, res) => {
 };
 
 // เพิ่มบริการรายเดือนใหม่
-const addContractService = async (req, res) => {
+exports.addContractService = async (req, res) => {
   try {
     const { contractId } = req.params;
     const { name, price, quantity = 1 } = req.body;
@@ -790,7 +778,7 @@ const addContractService = async (req, res) => {
 };
 
 // แก้ไขบริการรายเดือน
-const updateContractService = async (req, res) => {
+exports.updateContractService = async (req, res) => {
   try {
     const { contractId, serviceId } = req.params;
     const { name, price, quantity = 1 } = req.body;
@@ -825,7 +813,7 @@ const updateContractService = async (req, res) => {
 };
 
 // ลบบริการรายเดือน
-const deleteContractService = async (req, res) => {
+exports.deleteContractService = async (req, res) => {
   try {
     const { contractId, serviceId } = req.params;
 
@@ -845,22 +833,4 @@ const deleteContractService = async (req, res) => {
     console.error('Error deleting contract service:', err);
     res.status(500).json({ error: 'Failed to delete contract service: ' + err.message });
   }
-};
-
-module.exports = {
-  createContract,
-  getContractsByDorm,
-  getContractDetail,
-  getContractByRoom,
-  updateContract,
-  terminateContract,
-  getMoveoutList,
-  cancelMoveoutNotice,
-  getContractServices,
-  addContractService,
-  updateContractService,
-  deleteContractService,
-  // ฟังก์ชันใหม่สำหรับ terminated contracts
-  getTerminatedContracts,
-  getTerminatedContractDetail
 };

@@ -3,7 +3,7 @@ const pool = require('../db');
 /**
  * อัปเดตสถานะห้องให้เป็นว่าง เมื่อไม่มีสัญญาที่ active
  */
-const updateRoomAvailability = async (req, res) => {
+exports.updateRoomAvailability = async (req, res) => {
   try {
     // อัปเดตสถานะห้องทั้งหมดในหอพักให้ตรงกับสถานะสัญญา
     const { dormId } = req.params;
@@ -55,7 +55,7 @@ const updateRoomAvailability = async (req, res) => {
 /**
  * แก้ไขสถานะห้องเฉพาะห้องที่ระบุ
  */
-const fixRoomStatus = async (req, res) => {
+exports.fixRoomStatus = async (req, res) => {
   try {
     const { dormId, roomNumber } = req.params;
     
@@ -109,9 +109,4 @@ const fixRoomStatus = async (req, res) => {
       error: error.message
     });
   }
-};
-
-module.exports = {
-  updateRoomAvailability,
-  fixRoomStatus
 };

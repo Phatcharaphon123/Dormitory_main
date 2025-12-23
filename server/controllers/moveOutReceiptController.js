@@ -3,7 +3,7 @@ const pool = require('../db');
 /**
  * ดึงข้อมูลใบเสร็จการย้ายออกสำหรับแสดงผล
  */
-const getMoveOutReceiptData = async (req, res) => {
+exports.getMoveOutReceiptData = async (req, res) => {
   try {
     const { dormId, roomNumber } = req.params;
 
@@ -252,7 +252,7 @@ const getMoveOutReceiptData = async (req, res) => {
 /**
  * ดึงข้อมูลใบเสร็จการย้ายออกโดยใช้ move_out_receipt_id (PK)
  */
-const getMoveOutReceiptById = async (req, res) => {
+exports.getMoveOutReceiptById = async (req, res) => {
   try {
     const { moveOutReceiptId } = req.params;
 
@@ -483,12 +483,10 @@ const getMoveOutReceiptById = async (req, res) => {
 /**
  * ดึงใบเสร็จการย้ายออกตามเดือนและปี
  */
-const getMoveOutReceiptsByMonth = async (req, res) => {
+exports.getMoveOutReceiptsByMonth = async (req, res) => {
   try {
     const { dormId } = req.params;
     const { month, year } = req.query;
-
-    console.log(`📋 [getMoveOutReceiptsByMonth] หอพัก: ${dormId}, เดือน: ${month}, ปี: ${year}`);
 
     // Query สำหรับดึงใบเสร็จการย้ายออก
     let query = `
@@ -555,10 +553,4 @@ const getMoveOutReceiptsByMonth = async (req, res) => {
       error: error.message
     });
   }
-};
-
-module.exports = {
-  getMoveOutReceiptData,
-  getMoveOutReceiptById,
-  getMoveOutReceiptsByMonth
 };

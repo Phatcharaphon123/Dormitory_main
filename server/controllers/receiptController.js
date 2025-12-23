@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // 📄 สร้างใบเสร็จสำหรับสัญญา
-const createReceipt = async (req, res) => {
+exports.createReceipt = async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -105,7 +105,7 @@ const createReceipt = async (req, res) => {
 };
 
 // 📥 ดึงข้อมูลใบเสร็จ
-const getReceipt = async (req, res) => {
+exports.getReceipt = async (req, res) => {
   try {
     const { contractId } = req.params;
     
@@ -184,7 +184,7 @@ const getReceipt = async (req, res) => {
 };
 
 // 📥 ดึงใบเสร็จทั้งหมดของหอพัก
-const getReceiptsByDorm = async (req, res) => {
+exports.getReceiptsByDorm = async (req, res) => {
   try {
     const { dormId } = req.params;
     
@@ -217,7 +217,7 @@ const getReceiptsByDorm = async (req, res) => {
 };
 
 // 📄 ดึงหมายเหตุเริ่มต้นสำหรับใบเสร็จ (จากตาราง default_receipt_notes)
-const getDefaultReceiptNote = async (req, res) => {
+exports.getDefaultReceiptNote = async (req, res) => {
   try {
     const { dormId } = req.params;
     const { receipt_type = 'move_out' } = req.query; // รับ receipt_type จาก query parameter
@@ -244,7 +244,7 @@ const getDefaultReceiptNote = async (req, res) => {
 };
 
 // 📄 บันทึกหมายเหตุเริ่มต้นสำหรับใบเสร็จ (บันทึกลงในตาราง default_receipt_notes)
-const saveDefaultReceiptNote = async (req, res) => {
+exports.saveDefaultReceiptNote = async (req, res) => {
   try {
     const { dormId } = req.params;
     const { note_content, receipt_type = 'move_out' } = req.body; // รับ receipt_type จาก body
@@ -289,7 +289,7 @@ const saveDefaultReceiptNote = async (req, res) => {
 };
 
 // 📝 บันทึกหมายเหตุใบเสร็จโดยตรงลงตาราง receipts
-const saveReceiptNote = async (req, res) => {
+exports.saveReceiptNote = async (req, res) => {
   try {
     const { contractId } = req.params;
     const { receipt_note } = req.body;
@@ -316,7 +316,7 @@ const saveReceiptNote = async (req, res) => {
 };
 
 // 📝 บันทึกหมายเหตุใบเสร็จสำหรับห้องปัจจุบัน (ก่อนสร้างสัญญา)
-const saveReceiptNoteForRoom = async (req, res) => {
+exports.saveReceiptNoteForRoom = async (req, res) => {
   try {
     const { dormId, roomNumber } = req.params;
     const { receipt_note } = req.body;
@@ -384,12 +384,3 @@ const saveReceiptNoteForRoom = async (req, res) => {
   }
 };
 
-module.exports = {
-  createReceipt,
-  getReceipt,
-  getReceiptsByDorm,
-  getDefaultReceiptNote,
-  saveDefaultReceiptNote,
-  saveReceiptNote,
-  saveReceiptNoteForRoom
-};

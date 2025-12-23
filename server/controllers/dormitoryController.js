@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // ➕ เพิ่มหอพัก
-const createDorm = async (req, res) => {
+exports.createDorm = async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -29,11 +29,6 @@ const createDorm = async (req, res) => {
     // ตรวจสอบพิกัด
     const lat = parseFloat(latitude) || 13.736717;
     const lng = parseFloat(longitude) || 100.523186;
-
-    console.log('📊 ข้อมูลที่ได้รับ:', {
-      name, phone, email, address, province, district, subdistrict,
-      lat, lng, floorsNum, totalRoomsNum, paymentDueDayNum, lateFeePerDayNum, autoApplyLateFee
-    });
 
     await client.query('BEGIN');
 
@@ -89,7 +84,7 @@ const createDorm = async (req, res) => {
 };
 
 // 📥 ดึงหอพักทั้งหมด (เฉพาะของ user ที่ login)
-const getAllDorms = async (req, res) => {
+exports.getAllDorms = async (req, res) => {
   try {
     const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
     const result = await pool.query(
@@ -104,7 +99,7 @@ const getAllDorms = async (req, res) => {
 };
 
 // 📥 ดึงหอพักทั้งหมดพร้อมสถิติจากข้อมูลจริงในตาราง rooms (เฉพาะของ user ที่ login)
-const getAllDormsWithStats = async (req, res) => {
+exports.getAllDormsWithStats = async (req, res) => {
   try {
     const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
     const result = await pool.query(`
@@ -127,7 +122,7 @@ const getAllDormsWithStats = async (req, res) => {
 };
 
 // 📥 ดึงหอพักตาม ID พร้อมข้อมูลชั้น (จากตาราง rooms) - ตรวจสอบ ownership
-const getDormById = async (req, res) => {
+exports.getDormById = async (req, res) => {
   const dormId = req.params.id;
   const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
   
@@ -168,14 +163,11 @@ const getDormById = async (req, res) => {
 };
 
 // ✏️ แก้ไขหอพัก - ตรวจสอบ ownership
-const updateDorm = async (req, res) => {
+exports.updateDorm = async (req, res) => {
   const d = req.body || {};
   const imageFilename = req.files?.image?.[0]?.filename || d?.image_filename || null;
   const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
-
-  console.log("🧾 Body:", d);
-  console.log("🖼️ Files:", req.files);
-
+  
   try {
     const result = await pool.query(`
       UPDATE dormitories SET
@@ -227,10 +219,3 @@ const updateDorm = async (req, res) => {
   }
 };
 
-module.exports = {
-  createDorm,
-  getAllDorms,
-  getAllDormsWithStats,
-  getDormById,
-  updateDorm
-};

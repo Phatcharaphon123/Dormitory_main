@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // 📌 ดึงข้อมูลชั้นของหอพัก (จากตาราง rooms)
-const getDormFloors = async (req, res) => {
+exports.getDormFloors = async (req, res) => {
   try {
     const dormId = req.params.dormId;
     const result = await pool.query(`
@@ -27,7 +27,7 @@ const getDormFloors = async (req, res) => {
 };
 
 // 📌 อัปเดตข้อมูลชั้น (ไม่ต้องทำอะไรเพราะข้อมูลอยู่ใน rooms แล้ว)
-const updateDormFloors = async (req, res) => {
+exports.updateDormFloors = async (req, res) => {
   try {
     // ข้อมูลชั้นจะถูกอัปเดตอัตโนมัติเมื่อมีการเปลี่ยนแปลงห้องในตาราง rooms
     res.json({ message: 'ข้อมูลชั้นจะอัปเดตอัตโนมัติตามข้อมูลห้อง' });
@@ -38,7 +38,7 @@ const updateDormFloors = async (req, res) => {
 };
 
 // 📌 ดึงข้อมูลห้องทั้งหมดของหอพัก
-const getDormRooms = async (req, res) => {
+exports.getDormRooms = async (req, res) => {
   try {
     const dormId = req.params.dormId;
     const result = await pool.query(
@@ -53,7 +53,7 @@ const getDormRooms = async (req, res) => {
 };
 
 // 📌 ดึงข้อมูลห้องจัดกลุ่มตามชั้น (รองรับชั้นที่ไม่มีห้อง)
-const getDormRoomsByFloor = async (req, res) => {
+exports.getDormRoomsByFloor = async (req, res) => {
   try {
     const dormId = req.params.dormId;
     
@@ -113,7 +113,7 @@ const getDormRoomsByFloor = async (req, res) => {
 };
 
 // 📌 อัปเดตข้อมูลห้องทั้งหมด
-const updateDormRooms = async (req, res) => {
+exports.updateDormRooms = async (req, res) => {
   const client = await pool.connect();
   try {
     const dormId = req.params.dormId;
@@ -247,7 +247,7 @@ const updateDormRooms = async (req, res) => {
 };
 
 // 📌 อัปเดตห้องเดียว
-const updateSingleRoom = async (req, res) => {
+exports.updateSingleRoom = async (req, res) => {
   try {
     const { roomId } = req.params;
     const { room_number, available, room_type_id } = req.body;
@@ -279,7 +279,7 @@ const updateSingleRoom = async (req, res) => {
 };
 
 // 📌 อัปเดตเฉพาะห้องที่เลือกเท่านั้น
-const bulkUpdateRooms = async (req, res) => {
+exports.bulkUpdateRooms = async (req, res) => {
   const client = await pool.connect();
   try {
     const dormId = req.params.dormId;
@@ -318,7 +318,7 @@ const bulkUpdateRooms = async (req, res) => {
 };
 
 // 📌 ลบห้องหลายห้อง
-const deleteMultipleRooms = async (req, res) => {
+exports.deleteMultipleRooms = async (req, res) => {
   const client = await pool.connect();
   
   try {
@@ -353,7 +353,7 @@ const deleteMultipleRooms = async (req, res) => {
 };
 
 // 📌 ดึงข้อมูลห้องรายละเอียดพร้อมผู้เช่าและมิเตอร์
-const getRoomDetail = async (req, res) => {
+exports.getRoomDetail = async (req, res) => {
   try {
     const { dormId, roomId } = req.params;
     
@@ -454,7 +454,7 @@ const getRoomDetail = async (req, res) => {
 };
 
 // 📌 ตรวจสอบว่าห้องไหนมีข้อมูลอยู่ (สำหรับการแสดงผลในหน้าจัดการห้อง)
-const checkRoomsData = async (req, res) => {
+exports.checkRoomsData = async (req, res) => {
   try {
     const dormId = req.params.dormId;
     
@@ -486,17 +486,4 @@ const checkRoomsData = async (req, res) => {
     console.error('checkRoomsData error:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-};
-
-module.exports = {
-  getDormFloors,
-  updateDormFloors,
-  getDormRooms,
-  getDormRoomsByFloor,
-  getRoomDetail,
-  checkRoomsData,
-  updateDormRooms,
-  updateSingleRoom,
-  bulkUpdateRooms,
-  deleteMultipleRooms
 };

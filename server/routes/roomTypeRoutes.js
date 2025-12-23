@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const roomTypeController = require('../controllers/roomTypeController');
+const {
+  getAllRoomTypes,
+  getRoomTypeById,
+  createRoomType,
+  updateRoomType,
+  deleteRoomType
+} = require('../controllers/roomTypeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
@@ -17,16 +23,16 @@ const upload = multer({ storage });
 
 /* ─────────────── 🔹 ประเภทห้อง ─────────────── */
 // ดึงประเภทห้องตาม ID
-router.get("/:id", authMiddleware, roomTypeController.getRoomTypeById);
+router.get("/:id", authMiddleware, getRoomTypeById);
 // ดึงประเภทห้องทั้งหมดตามหอพัก
-router.get("/dormitories/:dormId", authMiddleware, roomTypeController.getAllRoomTypes);
+router.get("/dormitories/:dormId", authMiddleware, getAllRoomTypes);
 // ดึงประเภทห้องตาม ID และหอพัก
-router.get("/dormitories/:dormId/:id", authMiddleware, roomTypeController.getRoomTypeById);
+router.get("/dormitories/:dormId/:id", authMiddleware, getRoomTypeById);
 // สร้างประเภทห้องใหม่
-router.post("/dormitories/:dormId", authMiddleware, upload.array('images', 10), roomTypeController.createRoomType);
+router.post("/dormitories/:dormId", authMiddleware, upload.array('images', 10), createRoomType);
 // แก้ไขประเภทห้อง
-router.put("/dormitories/:dormId/:id", authMiddleware, upload.array('images', 10), roomTypeController.updateRoomType);
+router.put("/dormitories/:dormId/:id", authMiddleware, upload.array('images', 10), updateRoomType);
 // ลบประเภทห้อง
-router.delete("/dormitories/:dormId/:id", authMiddleware, roomTypeController.deleteRoomType);
+router.delete("/dormitories/:dormId/:id", authMiddleware, deleteRoomType);
 
 module.exports = router;

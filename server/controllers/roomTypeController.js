@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // 📌 ดึงประเภทห้องทั้งหมด (รวมรูป) ตาม dormId
-const getAllRoomTypes = async (req, res) => {
+exports.getAllRoomTypes = async (req, res) => {
   try {
     const dormId = req.params.dormId;
     const result = await pool.query(`
@@ -25,7 +25,7 @@ const getAllRoomTypes = async (req, res) => {
 };
 
   // 📌 ดึงประเภทห้องเดียว
-  const getRoomTypeById = async (req, res) => {
+  exports.getRoomTypeById = async (req, res) => {
   try {
     const dormId = req.params.dormId;
     const roomTypeId = req.params.id;
@@ -60,7 +60,7 @@ const getAllRoomTypes = async (req, res) => {
   };
 
 // 📌 สร้างประเภทห้องใหม่
-const createRoomType = async (req, res) => {
+exports.createRoomType = async (req, res) => {
   const client = await pool.connect();
   try {
     const {
@@ -138,7 +138,7 @@ const createRoomType = async (req, res) => {
 };
 
 // 📌 แก้ไขประเภทห้อง
-const updateRoomType = async (req, res) => {
+exports.updateRoomType = async (req, res) => {
   const client = await pool.connect();
   try {
     const roomTypeId = req.params.id;
@@ -220,7 +220,7 @@ const updateRoomType = async (req, res) => {
 };
 
 // 📌 ลบประเภทห้อง
-const deleteRoomType = async (req, res) => {
+exports.deleteRoomType = async (req, res) => {
   try {
     const roomTypeId = req.params.id;
 
@@ -247,10 +247,3 @@ const deleteRoomType = async (req, res) => {
   }
 };
 
-module.exports = {
-  getAllRoomTypes,
-  getRoomTypeById,
-  createRoomType,
-  updateRoomType,
-  deleteRoomType
-};

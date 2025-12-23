@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // 📌 สร้างหรืออัปเดตค่าน้ำ-ไฟของหอพัก
-const upsertUtilityRates = async (req, res) => {
+exports.upsertUtilityRates = async (req, res) => {
   const dormId = req.params.dormId;
   const { water_rate, electricity_rate } = req.body;
 
@@ -51,7 +51,7 @@ const upsertUtilityRates = async (req, res) => {
 };
 
 // 📥 ดึงค่าน้ำ-ไฟของหอพัก
-const getUtilityRates = async (req, res) => {
+exports.getUtilityRates = async (req, res) => {
   const dormId = req.params.dormId;
 
   try {
@@ -81,7 +81,7 @@ const getUtilityRates = async (req, res) => {
 };
 
 // 📊 ดึงสรุปข้อมูลการใช้สาธารณูปโภค
-const getUtilitySummary = async (req, res) => {
+exports.getUtilitySummary = async (req, res) => {
   const dormId = req.params.dormId;
   const queryYear = req.query.year || new Date().getFullYear();
   const queryMonth = req.query.month || new Date().getMonth() + 1;
@@ -129,7 +129,7 @@ const getUtilitySummary = async (req, res) => {
 };
 
 // 📊 ดึงข้อมูลการใช้รายเดือน
-const getMonthlyUtilityData = async (req, res) => {
+exports.getMonthlyUtilityData = async (req, res) => {
   const dormId = req.params.dormId;
   const year = req.query.year || new Date().getFullYear();
 
@@ -179,7 +179,7 @@ const getMonthlyUtilityData = async (req, res) => {
 };
 
 // 📊 ดึงข้อมูลการใช้รายปี
-const getYearlyUtilityData = async (req, res) => {
+exports.getYearlyUtilityData = async (req, res) => {
   const dormId = req.params.dormId;
 
   try {
@@ -215,7 +215,7 @@ const getYearlyUtilityData = async (req, res) => {
 };
 
 // 📊 ดึงข้อมูลการใช้รายวัน (30 วันย้อนหลัง)
-const getDailyUtilityData = async (req, res) => {
+exports.getDailyUtilityData = async (req, res) => {
   const dormId = req.params.dormId;
 
   try {
@@ -281,13 +281,4 @@ const getDailyUtilityData = async (req, res) => {
     console.error("getDailyUtilityData error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
-};
-
-module.exports = {
-  upsertUtilityRates,
-  getUtilityRates,
-  getUtilitySummary,
-  getMonthlyUtilityData,
-  getYearlyUtilityData,
-  getDailyUtilityData
 };

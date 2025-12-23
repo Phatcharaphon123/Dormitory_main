@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // ดึงข้อมูลมิเตอร์ทั้งหมดของหอพัก
-const getDormMeters = async (req, res) => {
+exports.getDormMeters = async (req, res) => {
   const { dormId } = req.params;
 
   try {
@@ -105,7 +105,7 @@ const getDormMeters = async (req, res) => {
 };
 
 // เพิ่มมิเตอร์ไฟฟ้า
-const addElectricMeter = async (req, res) => {
+exports.addElectricMeter = async (req, res) => {
   const { roomId, meterCode, installationDate, installationTime } = req.body;
 
   try {
@@ -155,7 +155,7 @@ const addElectricMeter = async (req, res) => {
 };
 
 // เพิ่มมิเตอร์น้ำ
-const addWaterMeter = async (req, res) => {
+exports.addWaterMeter = async (req, res) => {
   const { roomId, meterCode, installationDate, installationTime } = req.body;
 
   try {
@@ -205,7 +205,7 @@ const addWaterMeter = async (req, res) => {
 };
 
 // ลบมิเตอร์ไฟฟ้า
-const removeElectricMeter = async (req, res) => {
+exports.removeElectricMeter = async (req, res) => {
   const { roomId } = req.params;
 
   try {
@@ -226,7 +226,7 @@ const removeElectricMeter = async (req, res) => {
 };
 
 // ลบมิเตอร์น้ำ
-const removeWaterMeter = async (req, res) => {
+exports.removeWaterMeter = async (req, res) => {
   const { roomId } = req.params;
 
   try {
@@ -246,10 +246,3 @@ const removeWaterMeter = async (req, res) => {
   }
 };
 
-module.exports = {
-  getDormMeters,
-  addElectricMeter,
-  addWaterMeter,
-  removeElectricMeter,
-  removeWaterMeter
-};

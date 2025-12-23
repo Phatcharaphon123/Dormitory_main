@@ -250,7 +250,6 @@ function MonthDetailBills() {
   // ฟังก์ชันดึงประวัติการชำระเงิน
   const fetchPaymentHistory = async () => {
     try {
-      console.log('🔍 กำลังดึงประวัติการชำระเงิน:', { dormId, invoiceId });
       
       const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments`, {
         headers: {

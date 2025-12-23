@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // 0. ดึงข้อมูลห้องและมิเตอร์ล่าสุดสำหรับ dormitory
-const getRoomsWithLatestMeter = async (req, res) => {
+exports.getRoomsWithLatestMeter = async (req, res) => {
   const { dormId } = req.params;
 
   try {
@@ -92,7 +92,7 @@ const getRoomsWithLatestMeter = async (req, res) => {
   }
 };
 
-const createMeterRecord = async (req, res) => {
+exports.createMeterRecord = async (req, res) => {
   const { dormId } = req.params;
   const { readings, recordDate } = req.body;
   
@@ -246,9 +246,7 @@ const createMeterRecord = async (req, res) => {
   }
 };
 
-
-
-const getMeterRecords = async (req, res) => {
+exports.getMeterRecords = async (req, res) => {
   const { dormId } = req.params;
   try {
     const result = await pool.query(
@@ -270,7 +268,7 @@ const getMeterRecords = async (req, res) => {
   }
 };
 
-const getMeterRecordById = async (req, res) => {
+exports.getMeterRecordById = async (req, res) => {
   const { dormId, recordId } = req.params;
 
   try {
@@ -374,7 +372,7 @@ const getMeterRecordById = async (req, res) => {
   }
 };
 
-const updateMeterRecordById = async (req, res) => {
+exports.updateMeterRecordById = async (req, res) => {
   const { dormId, recordId } = req.params;
   const { meter_record_date, readings } = req.body;
   
@@ -475,7 +473,7 @@ const updateMeterRecordById = async (req, res) => {
   }
 };
 
-const deleteMeterRecordById = async (req, res) => {
+exports.deleteMeterRecordById = async (req, res) => {
   const { dormId, recordId } = req.params;
 
   try {
@@ -500,13 +498,4 @@ const deleteMeterRecordById = async (req, res) => {
     console.error('❌ Error deleting meter record:', err.stack);
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลบใบจดมิเตอร์' });
   }
-};
-
-module.exports = {
-  getRoomsWithLatestMeter,
-  createMeterRecord,
-  getMeterRecords,
-  getMeterRecordById,
-  updateMeterRecordById,
-  deleteMeterRecordById
 };

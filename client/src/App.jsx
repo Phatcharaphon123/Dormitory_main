@@ -8,51 +8,51 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // Layouts
 import MainLayout from "./pages/main/MainLayout";
-import DormLayout from "./pages/Dorm/DormLayout";
+import LayoutDormManage from "./layouts/LayoutDormManage";
 
 // Main pages
 import YouDorm from "./pages/main/Youdorm/YouDorm";
 import Profile from "./pages/main/Profile/Profile";
 
 // Dorm pages
-import DashboardDorm from "./pages/Dorm/dashboard/DashboardDorm";
-import RoomsPlan from "./pages/Dorm/RoomPlan/RoomPlan";
-import Bills from "./pages/Dorm/Bills/MonthBills";
-import PendingBills from "./pages/Dorm/Bills/PendingBills";
-import AllBills from "./pages/Dorm/Bills/AllBills";
-import MonthDetailBills from "./pages/Dorm/Bills/MonthDetailBills";
+import DashboardDorm from "./pages/DormManage/dashboard/DashboardDorm";
+import RoomsPlan from "./pages/DormManage/RoomPlan/RoomPlan";
+import Bills from "./pages/DormManage/Bills/MonthBills";
+import PendingBills from "./pages/DormManage/Bills/PendingBills";
+import AllBills from "./pages/DormManage/Bills/AllBills";
+import MonthDetailBills from "./pages/DormManage/Bills/MonthDetailBills";
 import AddDorm from "./pages/main/Youdorm/Adddorm/AddDormInfo";
-import RoomDetail from "./pages/Dorm/Room/RoomDetail";
-import MonthlyContract from "./pages/Dorm/Room/ContractPages/MonthlyContract";
-import MonthlyBills from "./pages/Dorm/Room/ContractPages/ContractReceipt/ReceiptPrint";
-import ContractDetail from "./pages/Dorm/Room/ContractPages/ContractDetail";
-import CancelContract from "./pages/Dorm/Room/ContractPages/CancelContract";
-import MoveOutReceipt from "./pages/Dorm/MoveOutManage/MoveOutReceipt/MoveOutReceipt";
-import MoveOutDetail from "./pages/Dorm/MoveOutManage/MoveOutDetail";
+import RoomDetail from "./pages/DormManage/Room/RoomDetail";
+import MonthlyContract from "./pages/DormManage/Room/ContractPages/MonthlyContract";
+import MonthlyBills from "./pages/DormManage/Room/ContractPages/ContractReceipt/ReceiptPrint";
+import ContractDetail from "./pages/DormManage/Room/ContractPages/ContractDetail";
+import CancelContract from "./pages/DormManage/Room/ContractPages/CancelContract";
+import MoveOutReceipt from "./pages/DormManage/MoveOutManage/MoveOutReceipt/MoveOutReceipt";
+import MoveOutDetail from "./pages/DormManage/MoveOutManage/MoveOutDetail";
 import MeterReading from "./pages/meter/MeterReading";
 import CreateMeterReading from "./pages/meter/CreateMeterReading";
 import EditMeterReading from "./pages/meter/EditMeterReading";
 import RealTimeMeter from "./pages/meter/RealTimeMeter";
 import RoomMeterDetail from "./pages/meter/RoomMeterDetail";
 import AddMeterDigital from "./pages/meter/AddMeterDigital";
-import MoveOuWaitforMoveOut from "./pages/Dorm/MoveOutManage/WaitforMoveOut";
-import MoveOut from "./pages/Dorm/MoveOutManage/MoveOut";
+import MoveOuWaitforMoveOut from "./pages/DormManage/MoveOutManage/WaitforMoveOut";
+import MoveOut from "./pages/DormManage/MoveOutManage/MoveOut";
 
 // Reports pages
-import Receipts from "./pages/Dorm/Reports/Receipts";
-import MonthlyBillsReport from "./pages/Dorm/Reports/MonthlyBillsReport";
-import TenantReport from "./pages/Dorm/Reports/TenantReport";
-import UtilitySummaryReport from "./pages/Dorm/Reports/UtilitySummaryReport";
-import ReceiptPrint from "./pages/Dorm/Room/ContractPages/ContractReceipt/ReceiptPrint";
+import Receipts from "./pages/DormManage/Reports/Receipts";
+import MonthlyBillsReport from "./pages/DormManage/Reports/MonthlyBillsReport";
+import TenantReport from "./pages/DormManage/Reports/TenantReport";
+import UtilitySummaryReport from "./pages/DormManage/Reports/UtilitySummaryReport";
+import ReceiptPrint from "./pages/DormManage/Room/ContractPages/ContractReceipt/ReceiptPrint";
 
 
 // Setting pages
-import SettingDormNavbar from "./pages/Dorm/SettingDorm/SettingDormNavbar";
-import SettingDormInfo from "./pages/Dorm/SettingDorm/SettingDormInfo"; 
+import SettingDormNavbar from "./pages/DormManage/SettingDorm/SettingDormNavbar";
+import SettingDormInfo from "./pages/DormManage/SettingDorm/SettingDormInfo"; 
 
 // Auth
-import Login from "./pages/login_register/login";
-import Register from "./pages/login_register/register";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
 
 function App() {
   return (
@@ -82,7 +82,7 @@ function App() {
           {/* 🔷 DormLayout: สำหรับหน้า admin/เจ้าของหอ */}
           <Route element={
             <ProtectedRoute>
-              <DormLayout />
+              <LayoutDormManage />
             </ProtectedRoute>
           }>
             <Route path="/dashboard/:dormId" element={<DashboardDorm />} />

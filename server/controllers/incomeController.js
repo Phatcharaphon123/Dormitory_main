@@ -1,7 +1,7 @@
 const pool = require('../db');
 
 // Get monthly income for current year
-const getMonthlyIncome = async (req, res) => {
+exports.getMonthlyIncome = async (req, res) => {
   try {
     const { dormId } = req.params;
     const { year } = req.query;
@@ -87,7 +87,7 @@ const getMonthlyIncome = async (req, res) => {
 };
 
 // Get yearly income
-const getYearlyIncome = async (req, res) => {
+exports.getYearlyIncome = async (req, res) => {
   try {
     const { dormId } = req.params;
     
@@ -142,7 +142,7 @@ const getYearlyIncome = async (req, res) => {
 };
 
 // Get dashboard summary statistics
-const getIncomeSummary = async (req, res) => {
+exports.getIncomeSummary = async (req, res) => {
   try {
     const { dormId } = req.params;
     
@@ -257,7 +257,7 @@ const getIncomeSummary = async (req, res) => {
 };
 
 // Get income breakdown by type
-const getIncomeBreakdown = async (req, res) => {
+exports.getIncomeBreakdown = async (req, res) => {
   try {
     const { dormId } = req.params;
     const { month, year } = req.query;
@@ -433,7 +433,7 @@ const getIncomeBreakdown = async (req, res) => {
 };
 
 // Get service fees from various sources
-const getServiceFees = async (req, res) => {
+exports.getServiceFees = async (req, res) => {
   try {
     const { dormId } = req.params;
     const { month, year } = req.query;
@@ -517,7 +517,7 @@ const getServiceFees = async (req, res) => {
 };
 
 // Get monthly occupancy data for income dashboard
-const getMonthlyOccupancy = async (req, res) => {
+exports.getMonthlyOccupancy = async (req, res) => {
   try {
     const { dormId } = req.params;
     const { month, year } = req.query;
@@ -611,13 +611,4 @@ const getMonthlyOccupancy = async (req, res) => {
       error: error.message
     });
   }
-};
-
-module.exports = {
-  getMonthlyIncome,
-  getYearlyIncome,
-  getIncomeSummary,
-  getIncomeBreakdown,
-  getServiceFees,
-  getMonthlyOccupancy
 };

@@ -1,6 +1,6 @@
 
 const {fetchSensorDormitoryLatest, fetchSensorDormitory} = require('../influxdb/query'); //คอนฟิกการเชื่อมต่อ influxdb
-const DormitoryLatest = async (req, res) => { 
+exports.DormitoryLatest = async (req, res) => { 
     try {
       const results = await fetchSensorDormitoryLatest();
       res.json({sensor: results});
@@ -9,7 +9,7 @@ const DormitoryLatest = async (req, res) => {
       res.status(500).json({ message: 'Failed to fetch car data', error: String(error) });
     }
   }
-const Dormitory = async (req, res) => { 
+exports.Dormitory = async (req, res) => { 
   try {
     const results = await fetchSensorDormitory();
     res.json({sensor: results});
@@ -17,8 +17,3 @@ const Dormitory = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch car data', error: String(error) });
   }
 }
-
-module.exports = {
-    DormitoryLatest,
-    Dormitory
-};
