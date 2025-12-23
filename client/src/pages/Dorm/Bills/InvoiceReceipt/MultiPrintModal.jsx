@@ -3,6 +3,7 @@ import { FaTimes } from 'react-icons/fa';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import PrintInvoice from './PrintInvoice';
+import API_URL from '../../../../config/api';
 
 const MultiPrintModal = ({ 
   showModal, 
@@ -29,19 +30,18 @@ const MultiPrintModal = ({
     try {
       console.log('� MultiPrintModal fetching API data for month:', selectedMonth);
       
-      const response = await axios.get(`http://localhost:3001/api/bills/dormitories/${dormId}/invoices/by-month`, {
+      const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/by-month`, {
         params: { month: selectedMonth },
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
 
-      console.log('📥 MultiPrintModal API Response:', response.data);
       setBills(response.data);
 
       // ดึงหมายเหตุจากตาราง default_receipt_notes เหมือน InvoiceReceipt
       try {
-        const noteResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/receipts/default-note/${dormId}?receipt_type=monthly`, {
+        const noteResponse = await axios.get(`${API_URL}/api/receipts/default-note/${dormId}?receipt_type=monthly`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }

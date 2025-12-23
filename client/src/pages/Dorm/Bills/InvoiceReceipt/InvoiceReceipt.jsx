@@ -3,6 +3,7 @@ import { FaPrint, FaTimes } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import PrintInvoice from "./PrintInvoice";
+import API_URL from "../../../../config/api";
 
 const InvoiceReceipt = ({
   showModal,
@@ -32,15 +33,11 @@ const InvoiceReceipt = ({
       );
       console.log(
         "🔄 API URL:",
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"
-        }/api/bills/dormitories/${dormId}/invoices/${invoiceId}`
+        `${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`
       );
 
       const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"
-        }/api/bills/dormitories/${dormId}/invoices/${invoiceId}`,
+        `${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -58,9 +55,7 @@ const InvoiceReceipt = ({
       // ดึงหมายเหตุจากตาราง default_receipt_notes
       try {
         const noteResponse = await axios.get(
-          `${
-            import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"
-          }/api/receipts/dormitories/${dormId}/default-note?receipt_type=monthly`,
+          `${API_URL}/api/receipts/dormitories/${dormId}/default-note?receipt_type=monthly`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`

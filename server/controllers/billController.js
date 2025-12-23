@@ -184,7 +184,6 @@ const createInvoices = async (req, res) => {
     const monthlyInvoiceId = monthlyInvoiceRes.rows[0].monthly_invoice_id;
 
     for (const room of rooms) {
-      console.log('💡 Room Data:', room);
       
       // ตรวจสอบข้อมูลห้อง
       if (!room.roomId || !room.tenantId) {
@@ -341,10 +340,6 @@ const getInvoicesByDormAndMonth = async (req, res) => {
     if (ownershipCheck.rows.length === 0) {
       return res.status(403).json({ error: 'Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้' });
     }
-
-    console.log('📥 dormId:', dormId);
-    console.log('📥 month:', month);
-
     let result;
 
     if (month) {
@@ -382,12 +377,6 @@ const getInvoicesByDormAndMonth = async (req, res) => {
       `;
       
       const basicResult = await pool.query(basicQuery, [dormId, month]);
-      
-      console.log(`🏠 ACTUAL Query result for month ${month}:`, basicResult.rows.length);
-      if (basicResult.rows.length > 0) {
-        console.log('🏠 Room 104 data:', basicResult.rows.find(r => r.room_number === '104'));
-        console.log('🏠 First 3 bills:', basicResult.rows.slice(0, 3).map(r => ({ id: r.id, room: r.room_number, tenant: r.tenant })));
-      }
       
       // Then get invoice items for each bill
       for (const bill of basicResult.rows) {
@@ -489,9 +478,6 @@ const getInvoicesByDormAndMonth = async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('🔥 SQL ERROR in getInvoicesByDormAndMonth:', error);
-    console.error('🔥 Error Message:', error.message);
-    console.error('🔥 Error Stack:', error.stack);
     res.status(500).json({ 
       error: 'ไม่สามารถโหลดข้อมูลบิลได้',
       details: error.message 
@@ -588,11 +574,6 @@ const getInvoiceItemsByInvoiceId = async (req, res) => {
       }
       return sum + amount;
     }, 0);
-
-    console.log('🧾 รายการทั้งหมด:', itemsResult.rows);
-    console.log('🧾 Total จากฐานข้อมูล:', invoice.total);
-    console.log('🧾 Total ที่คำนวณใหม่:', calculatedTotal);
-
     // ดึงข้อมูลการชำระเงินทั้งหมด
     const paymentsQuery = `
       SELECT 
@@ -609,10 +590,6 @@ const getInvoiceItemsByInvoiceId = async (req, res) => {
     // ใช้ยอดรวมที่คำนวณใหม่แทนยอดจากฐานข้อมูล
     const finalTotal = calculatedTotal;
     const balance = finalTotal - totalPaid;
-
-    console.log('🧾 Total ที่ใช้ในการส่งผล:', finalTotal);
-    console.log('🧾 Balance ใหม่:', balance);
-
     // จัดรูปแบบผลลัพธ์
     const response = {
       invoice: {
@@ -1056,8 +1033,6 @@ const getPaymentHistory = async (req, res) => {
       [invoiceId, dormId]
     );
 
-    console.log('💰 ผลลัพธ์จากฐานข้อมูล:', result.rows);
-
     res.json(result.rows.map(payment => ({
       id: payment.payment_id,
       billNumber: payment.invoice_number,
@@ -1364,7 +1339,6 @@ const getPendingInvoicesByDorm = async (req, res) => {
   const client = await pool.connect();
   try {
     const { dormId } = req.params;
-    console.log('🔍 Getting pending bills for dorm:', dormId);
     
     const query = `
       SELECT DISTINCT
@@ -1590,7 +1564,6 @@ const sendInvoicesByEmail = async (req, res) => {
   const { month, bills } = req.body; // bills = array ของ invoice_receipt_id
 
   try {
-    console.log('📧 เริ่มส่งบิลทางอีเมล:', { dormId, month, billCount: bills?.length });
 
     // ตรวจสอบว่ามีข้อมูลครบถ้วน
     if (!month || !bills || bills.length === 0) {
@@ -1673,8 +1646,6 @@ const sendInvoicesByEmail = async (req, res) => {
     const billsWithEmail = invoicesWithItems.filter(bill => bill.tenant_email);
     const billsWithoutEmail = invoicesWithItems.filter(bill => !bill.tenant_email);
 
-    console.log(`📊 สถิติการส่ง: มีอีเมล ${billsWithEmail.length} ใบ, ไม่มีอีเมล ${billsWithoutEmail.length} ใบ`);
-
     if (billsWithEmail.length === 0) {
       return res.status(400).json({ 
         error: 'ไม่พบบิลที่มีอีเมลผู้เช่า',
@@ -1697,8 +1668,6 @@ const sendInvoicesByEmail = async (req, res) => {
       noEmail: billsWithoutEmail.length,
       results: emailResults
     };
-
-    console.log('📧 รายงานการส่งอีเมล:', report);
 
     res.json({
       message: `ส่งบิลทางอีเมลสำเร็จ ${successCount} ใบ จาก ${billsWithEmail.length} ใบ`,

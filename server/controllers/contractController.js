@@ -273,12 +273,7 @@ const getContractByRoom = async (req, res) => {
       contractData.water_meter_start = meterResult.rows[0].latest_water_meter || contractData.water_meter_start;
       contractData.electric_meter_start = meterResult.rows[0].latest_electric_meter || contractData.electric_meter_start;
       contractData.latest_meter_read_date = meterResult.rows[0].meter_read_date;
-      console.log('✅ ใช้ข้อมูลมิเตอร์ล่าสุดจาก meter_readings:', {
-        water: contractData.water_meter_start,
-        electric: contractData.electric_meter_start
-      });
     } else {
-      // หากไม่มีข้อมูลใน meter_readings ให้ใช้ค่าเริ่มต้นจากสัญญา
       console.log('⚠️ ไม่พบข้อมูลมิเตอร์ใน meter_readings ใช้ค่าเริ่มต้นจากสัญญา');
     }
 
@@ -470,8 +465,6 @@ const terminateContract = async (req, res) => {
           calculatedNetAmount -= amount;
         }
         
-        console.log(`💰 Item: ${adjustment.description}, Type: ${itemType}, Amount: ${amount}, Running Total: ${calculatedNetAmount}`);
-        
         await client.query(`
           INSERT INTO move_out_receipt_items (
             move_out_receipt_id, item_type, description, 
@@ -486,9 +479,6 @@ const terminateContract = async (req, res) => {
           amount
         ]);
       }
-      console.log(`✅ บันทึก ${adjustments.length} รายการใน move_out_receipt_items`);
-      console.log(`💰 คำนวณ net_amount ใหม่: ${calculatedNetAmount}`);
-      
       // อัปเดต net_amount ในตาราง move_out_receipts ด้วยค่าที่คำนวณใหม่
       await client.query(`
         UPDATE move_out_receipts 

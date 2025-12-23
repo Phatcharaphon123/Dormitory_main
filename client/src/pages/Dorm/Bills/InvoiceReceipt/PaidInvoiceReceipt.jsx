@@ -1,19 +1,13 @@
 import React from 'react';
 import axios from 'axios';
+import API_URL from '../../../../config/api';
 
-/**
- * Component สำหรับสร้าง HTML และพิมพ์ใบเสร็จที่ชำระเงินแล้ว
- * ใช้โครงสร้างเดียวกับ PrintInvoice 100%
- */
 const PaidInvoiceReceipt = {
   // ฟังก์ชันดึงข้อมูลจาก API
   fetchReceiptData: async (dormId, invoiceId, paymentId = null) => {
-    try {
-      console.log('🔄 กำลังดึงข้อมูลใบเสร็จจาก API...', { dormId, invoiceId, paymentId });
-      
+    try {  
       // ดึงข้อมูลใบแจ้งหนี้
-      const invoiceResponse = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`,
+      const invoiceResponse = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -26,7 +20,7 @@ const PaidInvoiceReceipt = {
 
       // ดึงข้อมูลประวัติการชำระเงิน
       const paymentsResponse = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments`,
+        `${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -45,7 +39,7 @@ const PaidInvoiceReceipt = {
       
       try {
         const paymentNoteResponse = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/receipts/default-note/${dormId}?receipt_type=payment`,
+          `${API_URL}/api/receipts/default-note/${dormId}?receipt_type=payment`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -56,7 +50,6 @@ const PaidInvoiceReceipt = {
           const paymentNoteData = paymentNoteResponse.data;
           if (paymentNoteData.note_content) {
             defaultNote = paymentNoteData.note_content;
-            console.log('✅ ดึงหมายเหตุการชำระเงินสำเร็จ:', defaultNote);
           }
         }
       } catch (paymentNoteErr) {
@@ -71,7 +64,6 @@ const PaidInvoiceReceipt = {
           // แปลงทั้งคู่เป็น string เพื่อเปรียบเทียบอย่างแม่นยำ
           const pId = String(p.id);
           const searchId = String(paymentId);
-          console.log(`🔍 เปรียบเทียบ Payment ID: ${pId} กับ ${searchId}`);
           return pId === searchId;
         }) : null,
         defaultNote: defaultNote
@@ -799,7 +791,6 @@ const PaidInvoiceReceipt = {
 
   // ฟังก์ชันรันการพิมพ์ (ใช้วิธีเดียวกับ PrintInvoice)
   executePrint: (htmlContent, filename = 'ใบเสร็จรับเงิน') => {
-    console.log('🖨️ กำลังเตรียมพิมพ์ใบเสร็จ...');
 
     // เพิ่ม Google Fonts สำหรับ Prompt
     const existingFontLink = document.querySelector('link[href*="fonts.googleapis.com"]');

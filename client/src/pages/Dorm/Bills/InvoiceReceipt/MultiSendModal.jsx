@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../../config/api';
 
 const MultiSendModal = ({ 
   showModal, 
@@ -29,9 +30,7 @@ const MultiSendModal = ({
   const fetchBillsData = async () => {
     setLoading(true);
     try {
-      console.log('📊 MultiSendModal fetching API data for month:', selectedMonth);
-      
-      const response = await axios.get(`http://localhost:3001/api/bills/dormitories/${dormId}/invoices/by-month`, {
+      const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/by-month`, {
         params: { month: selectedMonth },
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -50,7 +49,7 @@ const MultiSendModal = ({
 
   const fetchSendHistory = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/bills/dormitories/${dormId}/send-history`, {
+      const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/send-history`, {
         params: { month: selectedMonth },
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -266,7 +265,7 @@ const MultiSendModal = ({
       });
 
       // เรียก API สำหรับส่งบิลหลายใบพร้อมกัน
-      const response = await axios.post(`http://localhost:3001/api/bills/dormitories/${dormId}/invoices/send-email`, {
+      const response = await axios.post(`${API_URL}/api/bills/dormitories/${dormId}/invoices/send-email`, {
         month: selectedMonth,
         bills: billIds
       }, {
