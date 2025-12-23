@@ -234,8 +234,6 @@ const getMoveOutReceiptData = async (req, res) => {
       createdAt: moveOutData.created_at
     };
 
-    console.log(`✅ ดึงข้อมูลใบเสร็จการย้ายออกสำเร็จ: ${receiptData.receiptNumber}`);
-
     res.json({
       success: true,
       data: receiptData
@@ -466,8 +464,6 @@ const getMoveOutReceiptById = async (req, res) => {
       receiptNote: moveOutData.receipt_note || 'ใบเสร็จการย้ายออกจากหอพัก',
       createdAt: moveOutData.created_at
     };
-
-    console.log(`✅ ดึงข้อมูลใบเสร็จการย้ายออกสำเร็จ: ${receiptData.receiptNumber}`);
 
     res.json({
       success: true,

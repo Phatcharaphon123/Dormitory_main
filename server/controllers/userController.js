@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 // สมัครสมาชิก
-const register = async (req, res) => {
+exports.register = async (req, res) => {
   try {
     const { username, email, phone, password } = req.body;
 
@@ -71,7 +71,7 @@ const register = async (req, res) => {
 };
 
 // เข้าสู่ระบบ
-const login = async (req, res) => {
+exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -138,7 +138,7 @@ const login = async (req, res) => {
 };
 
 // ตรวจสอบสถานะการเข้าสู่ระบบ
-const verifyToken = async (req, res) => {
+exports.verifyToken = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
 
@@ -179,7 +179,7 @@ const verifyToken = async (req, res) => {
 };
 
 // อัปเดตข้อมูลโปรไฟล์
-const updateProfile = async (req, res) => {
+exports.updateProfile = async (req, res) => {
   try {
     // ใช้ข้อมูลจาก middleware authMiddleware
     const { user_id } = req.user;
@@ -257,7 +257,7 @@ const updateProfile = async (req, res) => {
 };
 
 // เปลี่ยนรหัสผ่าน
-const changePassword = async (req, res) => {
+exports.changePassword = async (req, res) => {
   try {
     // ใช้ข้อมูลจาก middleware authMiddleware
     const { user_id } = req.user;
@@ -327,7 +327,7 @@ const changePassword = async (req, res) => {
 };
 
 // รีเซ็ตรหัสผ่านโดยใช้ Token (ไม่ต้องใส่รหัสผ่านเก่า)
-const resetPasswordWithToken = async (req, res) => {
+exports.resetPasswordWithToken = async (req, res) => {
   try {
     // ใช้ข้อมูลจาก middleware authMiddleware
     const { user_id } = req.user;
@@ -373,11 +373,3 @@ const resetPasswordWithToken = async (req, res) => {
   }
 };
 
-module.exports = {
-  register,
-  login,
-  verifyToken,
-  updateProfile,
-  changePassword,
-  resetPasswordWithToken
-};
