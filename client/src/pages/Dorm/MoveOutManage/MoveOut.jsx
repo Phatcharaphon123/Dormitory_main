@@ -6,6 +6,7 @@ import axios from 'axios';
 import Pagination from '../../../components/Pagination';
 import ExcelExportButton from '../../../components/ExcelExportButton';
 import { BsPersonFillX } from "react-icons/bs";
+import API_URL from '../../../config/api';
 
 function MoveOut() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ function MoveOut() {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3001/api/contracts/dormitories/${dormId}/terminated`, {
+        const response = await axios.get(`${API_URL}/api/contracts/dormitories/${dormId}/terminated`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

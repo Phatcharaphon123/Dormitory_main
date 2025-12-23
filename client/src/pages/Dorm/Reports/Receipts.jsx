@@ -7,6 +7,7 @@ import Pagination from "../../../components/Pagination";
 import ExcelExportButton from "../../../components/ExcelExportButton";
 import { FaReceipt } from "react-icons/fa";
 import axios from 'axios';
+import API_URL from "../../../config/api";
 
 function Receipts() {
   const [receipts, setReceipts] = useState([]);
@@ -35,13 +36,13 @@ function Receipts() {
         
         // ดึงข้อมูลตามเดือนที่เลือก
         // payment-receipts API รวม payment receipts และ move-in receipts ไว้แล้ว
-        paymentUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/payment-receipts?month=${month}&year=${year}`;
-        moveOutUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/move-out-receipts/dormitories/${dormId}?month=${month}&year=${year}`;
+        paymentUrl = `${API_URL}/api/bills/dormitories/${dormId}/payment-receipts?month=${month}&year=${year}`;
+        moveOutUrl = `${API_URL}/api/move-out-receipts/dormitories/${dormId}?month=${month}&year=${year}`;
       } else {
         // ดึงข้อมูลทั้งหมด (ไม่ระบุเดือน)
         // payment-receipts API รวม payment receipts และ move-in receipts ไว้แล้ว
-        paymentUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/payment-receipts`;
-        moveOutUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/move-out-receipts/dormitories/${dormId}`;
+        paymentUrl = `${API_URL}/api/bills/dormitories/${dormId}/payment-receipts`;
+        moveOutUrl = `${API_URL}/api/move-out-receipts/dormitories/${dormId}`;
       }
       const paymentResponse = await axios.get(paymentUrl, {
         headers: {
@@ -414,7 +415,7 @@ function Receipts() {
         const contractId = receipt.invoiceId; // invoiceId ในกรณีนี้คือ contractId
         
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/receipts/contracts/${contractId}`,
+          `${API_URL}/api/receipts/contracts/${contractId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -433,7 +434,7 @@ function Receipts() {
         const receiptId = receipt.originalId || receipt.id;
         
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/move-out-receipts/${receiptId}`,
+          `${API_URL}/api/move-out-receipts/${receiptId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -448,7 +449,6 @@ function Receipts() {
         
         // ตรวจสอบรายการ items - หากไม่มีให้สร้างรายการเปล่า
         if (!receiptData.items || receiptData.items.length === 0) {
-          console.warn('⚠️ ไม่พบรายการในใบเสร็จ แต่จะดำเนินการพิมพ์ต่อไป');
           // สร้างรายการเปล่าเพื่อให้สามารถพิมพ์ได้
           receiptData.items = [];
         }

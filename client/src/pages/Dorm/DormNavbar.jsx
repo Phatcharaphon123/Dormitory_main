@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom"; // เพิ่ม us
 import { FaChevronDown } from "react-icons/fa";
 import { FiUser } from "react-icons/fi";
 import { useAuth } from "../../contexts/AuthContext";
+import API_URL from '../../config/api';
 
 // Component สำหรับ Logout Confirmation Popup
 function LogoutConfirmPopup({ isOpen, onClose, onConfirm }) {
@@ -71,7 +72,7 @@ function DormNavbar() {
   useEffect(() => {
     if (dormId) {
       const token = localStorage.getItem('token');
-      fetch(`http://localhost:3001/api/dormitories/${dormId}`, {
+      fetch(`${API_URL}/api/dormitories/${dormId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

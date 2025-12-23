@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaPhone, FaUser, FaSearch, FaCalendarAlt, FaIdCard, FaEdit, FaSignOutAlt, FaFileContract, FaPlus } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../../../config/api';
 
 function Contract() {
   const [contract, setContract] = useState(null);
@@ -10,11 +11,8 @@ function Contract() {
   const navigate = useNavigate();
   const { dormId, roomNumber } = useParams();
 
-  // Debug parameters
-  // console.log('📝 URL Parameters:', { dormId, roomNumber });
-
   useEffect(() => {
-    // console.log('🔄 useEffect triggered with:', { dormId, roomNumber });
+    
     if (dormId && roomNumber) {
       fetchContract();
     } else {
@@ -33,7 +31,7 @@ function Contract() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/contracts/dormitories/${dormId}/rooms/${roomNumber}`, {
+      const response = await axios.get(`${API_URL}/api/contracts/dormitories/${dormId}/rooms/${roomNumber}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setContract(response.data);

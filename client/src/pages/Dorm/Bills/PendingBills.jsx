@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Pagination from '../../../components/Pagination';
 import ExcelExportButton from '../../../components/ExcelExportButton';
 import { FaFileInvoiceDollar } from "react-icons/fa6";
+import API_URL from '../../../config/api';
 import axios from 'axios';
 
 function PendingBills() {
@@ -22,7 +23,7 @@ function PendingBills() {
     const fetchPendingBills = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:3001/api/bills/dormitories/${dormId}/invoices/pending`, {
+        const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/pending`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }

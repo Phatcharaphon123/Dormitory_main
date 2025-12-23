@@ -4,6 +4,7 @@ import Pagination from "../../../components/Pagination";
 import { FaUsers } from "react-icons/fa";
 import ExcelExportButton from "../../../components/ExcelExportButton";
 import axios from 'axios';
+import API_URL from "../../../config/api";
 
 function TenantReport() {
   const [tenantData, setTenantData] = useState([]);
@@ -66,7 +67,7 @@ function TenantReport() {
   const fetchTenantData = async () => {
     try {
       // ดึงข้อมูลสัญญาและผู้เช่า
-      const contractsRes = await axios.get(`http://localhost:3001/api/contracts/dormitories/${dormId}`, {
+      const contractsRes = await axios.get(`${API_URL}/api/contracts/dormitories/${dormId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -79,7 +80,7 @@ function TenantReport() {
       
       for (const tenantId of uniqueTenantIds) {
         try {
-          const tenantRes = await axios.get(`http://localhost:3001/api/tenants/${tenantId}/full`, {
+          const tenantRes = await axios.get(`${API_URL}/api/tenants/${tenantId}/full`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`
             }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaWater, FaBolt, FaSync, FaEye, FaHome, FaCalendarAlt, FaTint, FaSearch, FaFilter, FaUndo, FaExclamationTriangle, FaCheckCircle, FaPlus } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../../config/api';
 
 // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
 const formatThaiDate = (dateString) => {
@@ -33,12 +34,12 @@ function RealTimeMeter() {
     try {
       const token = localStorage.getItem('token');
       // ดึงข้อมูลห้องตามชั้น
-      const roomsResponse = await axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}/by-floor`, {
+      const roomsResponse = await axios.get(`${API_URL}/api/rooms/dormitories/${dormId}/by-floor`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // ดึงข้อมูลมิเตอร์
-      const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${dormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -53,7 +54,7 @@ function RealTimeMeter() {
       Object.keys(metersResponse.data).forEach(floor => {
         metersResponse.data[floor].forEach(room => {
           roomDetailPromises.push(
-            axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}/rooms/${room.roomId}/detail`, {
+            axios.get(`${API_URL}/api/rooms/dormitories/${dormId}/rooms/${room.roomId}/detail`, {
               headers: { Authorization: `Bearer ${token}` }
             }).then(detailResponse => ({
               ...room,

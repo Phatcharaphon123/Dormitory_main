@@ -3,6 +3,7 @@ import { FaArrowLeft, FaSave, FaBolt, FaTint, FaTimes, FaTrash } from 'react-ico
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../config/api';
 
 function AddEditMeterForm({ room, meterType, onClose, onSave, onDelete }) {
   const [formData, setFormData] = useState({
@@ -71,7 +72,7 @@ function AddEditMeterForm({ room, meterType, onClose, onSave, onDelete }) {
   const validateMeterCodeWithInflux = async (meterCode) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:3001/api/influx/validate-measurement', {
+      const response = await axios.post(`${API_URL}/api/influx/validate-measurement`, {
         measurement: meterCode
       }, {
         headers: { 
@@ -154,8 +155,8 @@ function AddEditMeterForm({ room, meterType, onClose, onSave, onDelete }) {
     setIsSubmitting(true);
     try {
       const endpoint = formData.type === 'electric' ? 
-        `http://localhost:3001/api/meters/electric/${formData.roomId}` : 
-        `http://localhost:3001/api/meters/water/${formData.roomId}`;
+        `${API_URL}/api/meters/electric/${formData.roomId}` : 
+        `${API_URL}/api/meters/water/${formData.roomId}`;
       
       const token = localStorage.getItem('token');
       await axios.delete(endpoint, {

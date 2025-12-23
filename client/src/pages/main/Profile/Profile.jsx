@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../../../contexts/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../config/api';
 
 function Profile() {
   const { user } = useAuth();
@@ -66,7 +67,7 @@ function Profile() {
         phone: profileData.phone
       });
       
-      const response = await axios.put('http://localhost:3001/api/auth/profile', {
+      const response = await axios.put(`${API_URL}/api/auth/profile`, {
         username: profileData.username,
         email: profileData.email,
         phone: profileData.phone
@@ -128,7 +129,7 @@ function Profile() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put('http://localhost:3001/api/auth/change-password', {
+      const response = await axios.put(`${API_URL}/api/auth/change-password`, {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       }, {

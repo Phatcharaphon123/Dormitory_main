@@ -5,6 +5,7 @@ import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../../config/api';
 
 function CancelContract() {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ function CancelContract() {
       }
       
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/contracts/dormitories/${finalDormId}/rooms/${finalRoomNumber}`, {
+      const response = await axios.get(`${API_URL}/api/contracts/dormitories/${finalDormId}/rooms/${finalRoomNumber}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -114,7 +115,7 @@ function CancelContract() {
         // ดึงข้อมูลบิลค้างชำระ
         if (result.contract_id) {
           try {
-            const billsResponse = await axios.get(`http://localhost:3001/api/bills/contracts/${result.contract_id}`, {
+            const billsResponse = await axios.get(`${API_URL}/api/bills/contracts/${result.contract_id}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             const billsData = billsResponse.data;
@@ -213,7 +214,7 @@ function CancelContract() {
         const token = localStorage.getItem('token');
         
         // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-        const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${finalDormId}`, {
+        const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -235,7 +236,7 @@ function CancelContract() {
           // ดึงข้อมูลจาก InfluxDB ถ้ามีมิเตอร์ดิจิทัล
           if (hasWaterMeter && waterMeterCode) {
             try {
-              const waterResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+              const waterResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
                 measurement: waterMeterCode
               }, {
                 headers: { 
@@ -254,7 +255,7 @@ function CancelContract() {
           
           if (hasElectricMeter && electricMeterCode) {
             try {
-              const electricResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+              const electricResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
                 measurement: electricMeterCode
               }, {
                 headers: { 
@@ -331,7 +332,7 @@ function CancelContract() {
     const loadDefaultNote = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3001/api/receipts/dormitories/${finalDormId}/default-note?receipt_type=move_out`, {
+        const response = await axios.get(`${API_URL}/api/receipts/dormitories/${finalDormId}/default-note?receipt_type=move_out`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = response.data;
@@ -352,7 +353,7 @@ function CancelContract() {
   const saveDefaultNote = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:3001/api/receipts/dormitories/${finalDormId}/default-note`, {
+      const response = await axios.post(`${API_URL}/api/receipts/dormitories/${finalDormId}/default-note`, {
         note_content: tempNote,
         receipt_type: 'move_out'
       }, {
@@ -391,7 +392,7 @@ function CancelContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${finalDormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -421,7 +422,7 @@ function CancelContract() {
       // ดึงข้อมูลจาก InfluxDB ถ้ามีมิเตอร์น้ำดิจิทัล
       if (hasWaterMeter && waterMeterCode) {
         try {
-          const waterResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const waterResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: waterMeterCode
           }, {
             headers: { 
@@ -447,7 +448,7 @@ function CancelContract() {
       // ดึงข้อมูลจาก InfluxDB ถ้ามีมิเตอร์ไฟดิจิทัล
       if (hasElectricMeter && electricMeterCode) {
         try {
-          const electricResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const electricResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: electricMeterCode
           }, {
             headers: { 
@@ -495,7 +496,7 @@ function CancelContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${finalDormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -520,7 +521,7 @@ function CancelContract() {
       // ดึงข้อมูลจาก InfluxDB ถ้ามีมิเตอร์น้ำดิจิทัล
       if (hasWaterMeter && waterMeterCode) {
         try {
-          const waterResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const waterResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: waterMeterCode
           }, {
             headers: { 
@@ -563,7 +564,7 @@ function CancelContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${finalDormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -588,7 +589,7 @@ function CancelContract() {
       // ดึงข้อมูลจาก InfluxDB ถ้ามีมิเตอร์ไฟดิจิทัล
       if (hasElectricMeter && electricMeterCode) {
         try {
-          const electricResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const electricResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: electricMeterCode
           }, {
             headers: { 
@@ -766,7 +767,7 @@ function CancelContract() {
     if (item && item.move_out_adjustment_id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.delete(`http://localhost:3001/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
+        const response = await axios.delete(`${API_URL}/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -796,7 +797,7 @@ function CancelContract() {
     if (item && item.move_out_adjustment_id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.delete(`http://localhost:3001/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
+        const response = await axios.delete(`${API_URL}/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -826,7 +827,7 @@ function CancelContract() {
     if (item && item.move_out_adjustment_id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.delete(`http://localhost:3001/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
+        const response = await axios.delete(`${API_URL}/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -856,7 +857,7 @@ function CancelContract() {
     if (item && item.move_out_adjustment_id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.delete(`http://localhost:3001/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
+        const response = await axios.delete(`${API_URL}/api/contract-terminations/adjustments/${item.move_out_adjustment_id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -1003,28 +1004,10 @@ function CancelContract() {
         });
       }
 
-      console.log('📤 ส่งข้อมูลไป Backend:', {
-        endpoint: `http://localhost:3001/api/contracts/${contractData?.contract_id}/terminate`,
-        payload: {
-          checkoutDate: checkoutDate,
-          paymentMethod: paymentMethod,
-          finalAmount: finalAmount,
-          note: note,
-          adjustments: allAdjustments
-        }
-      });
-
-      // Debug: แสดงข้อมูลค่าน้ำ/ไฟและเงินประกันที่จะส่งไป
-      console.log('🚰 Meter Charges:', meterCharges);
-      console.log('⚡ Utility Charges:', utilityCharges);
-      console.log('📋 All Adjustments:', allAdjustments);
-      console.log('💰 Deposit Refund Checkbox:', isDepositRefund);
-      console.log('💵 Deposit Amount:', contractData?.deposit_monthly);
-
       // ทดสอบการเชื่อมต่อก่อน
       try {
         const token = localStorage.getItem('token');
-        const testResponse = await axios.get(`http://localhost:3001/api/dormitories/${finalDormId}`, {
+        const testResponse = await axios.get(`${API_URL}/api/dormitories/${finalDormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log('🔗 Connection test: OK');
@@ -1042,7 +1025,7 @@ function CancelContract() {
 
       // บันทึกการยกเลิกสัญญาจริง (รวมรายการ adjustments ไปด้วย)
       const token = localStorage.getItem('token');
-      const terminateResponse = await axios.post(`http://localhost:3001/api/contracts/${contractData?.contract_id}/terminate`, {
+      const terminateResponse = await axios.post(`${API_URL}/api/contracts/${contractData?.contract_id}/terminate`, {
         termination_date: checkoutDate,
         water_meter_end: parseInt(currentWaterMeter) || 0,
         electric_meter_end: parseInt(currentElectricMeter) || 0,
@@ -1059,19 +1042,13 @@ function CancelContract() {
         }
       });
 
-      console.log('🌐 Response status:', terminateResponse.status);
-      console.log('🌐 Response data:', terminateResponse.data);
-
       const terminateResult = terminateResponse.data;
-      
-      console.log('📥 ผลลัพธ์จาก Backend:', terminateResult);
-      
+
       if (!terminateResult.success) {
         throw new Error(terminateResult.message || 'ไม่สามารถยกเลิกสัญญาได้');
       }
 
       // แสดงผลลัพธ์
-      console.log('✅ แสดง Toast สำเร็จ');
       toast.success('✅ ยกเลิกสัญญาเรียบร้อยแล้ว!', {
         position: "top-right",
         autoClose: 5000,
@@ -1124,7 +1101,6 @@ function CancelContract() {
       // เปลี่ยน state เป็นกำลังนำทาง
       setTimeout(() => {
         setIsNavigating(true);
-        console.log('🔄 กำลัง navigate ไปหน้าใบเสร็จ...');
       }, 3500);
       
       setTimeout(() => {

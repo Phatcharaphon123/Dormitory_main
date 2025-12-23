@@ -4,14 +4,13 @@ import { FaPrint, FaTrash, FaPlus, FaEdit, FaEye, FaFileInvoice, FaFileAlt, FaUs
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { GoDotFill } from "react-icons/go";
 import axios from 'axios';
+import API_URL from '../../../config/api';
 
 function MoveOutDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { dormId, receiptNumber } = useParams();
   
-
-
   // State สำหรับข้อมูลที่ดึงจาก API
   const [moveOutData, setMoveOutData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +23,7 @@ function MoveOutDetail() {
         setLoading(true);
         // ใช้ contract ID แทน receiptNumber เพื่อดึงข้อมูล terminated contract
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3001/api/contracts/${receiptNumber}/terminated`, {
+        const response = await axios.get(`${API_URL}/api/contracts/${receiptNumber}/terminated`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

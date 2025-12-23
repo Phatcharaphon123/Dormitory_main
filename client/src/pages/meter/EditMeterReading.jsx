@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../config/api';
 
 // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
 const formatThaiDate = (dateString) => {
@@ -34,10 +35,9 @@ const [formData, setFormData] = useState({
     const fetchMeterRecord = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`http://localhost:3001/api/meter-records/dormitories/${dormId}/${recordId}`, {
+        const res = await axios.get(`${API_URL}/api/meter-records/dormitories/${dormId}/${recordId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log("✅ Meter record response:", res.data);
 
           const record_date = res.data.record_date; // มั่นใจว่าเป็น YYYY-MM-DD แล้วจาก backend
 
@@ -220,14 +220,9 @@ const [formData, setFormData] = useState({
       return;
     }
 
-    console.log('📤 Sending data:', {
-      meter_record_date: formData.readingDate,
-      readings: readings
-    });
-
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:3001/api/meter-records/dormitories/${dormId}/${recordId}`, {
+      await axios.put(`${API_URL}/api/meter-records/dormitories/${dormId}/${recordId}`, {
         meter_record_date: formData.readingDate,
         readings
       }, {

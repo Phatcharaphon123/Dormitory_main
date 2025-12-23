@@ -6,6 +6,7 @@ import bgImage from '../../assets/bg.png';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../config/api';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -20,7 +21,7 @@ function Login() {
     }
 
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/login', {
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
         username: username,
         password: password
       });

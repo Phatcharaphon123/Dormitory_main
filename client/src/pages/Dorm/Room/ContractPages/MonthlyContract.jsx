@@ -9,6 +9,7 @@ import amphures from "../../../../assets/data/api_amphure.json";
 import tambons from "../../../../assets/data/thai_tambons.json";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../../config/api';
 
 
 function MonthlyContract() {
@@ -68,7 +69,7 @@ function MonthlyContract() {
         const token = localStorage.getItem('token');
         
         // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-        const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${dormId}`, {
+        const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -90,7 +91,7 @@ function MonthlyContract() {
           // ดึงข้อมูลจาก InfluxDB ถ้ามีมิเตอร์ดิจิทัล
           if (hasWaterMeter && waterMeterCode) {
             try {
-              const waterResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+              const waterResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
                 measurement: waterMeterCode
               }, {
                 headers: { 
@@ -109,7 +110,7 @@ function MonthlyContract() {
           
           if (hasElectricMeter && electricMeterCode) {
             try {
-              const electricResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+              const electricResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
                 measurement: electricMeterCode
               }, {
                 headers: { 
@@ -192,7 +193,7 @@ function MonthlyContract() {
     const fetchRoomTypes = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`http://localhost:3001/api/room-types/dormitories/${dormId}`, {
+        const res = await axios.get(`${API_URL}/api/room-types/dormitories/${dormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setRoomTypes(res.data);
@@ -211,7 +212,7 @@ function MonthlyContract() {
     const fetchRoomInfo = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}`, {
+        const res = await axios.get(`${API_URL}/api/rooms/dormitories/${dormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const room = res.data.find(r => r.room_number === roomNumber);
@@ -245,7 +246,7 @@ function MonthlyContract() {
     const loadDefaultReceiptNote = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3001/api/receipts/dormitories/${dormId}/default-note?receipt_type=contract`, {
+        const response = await axios.get(`${API_URL}/api/receipts/dormitories/${dormId}/default-note?receipt_type=contract`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setReceiptNote(response.data.note_content || '');
@@ -384,7 +385,7 @@ function MonthlyContract() {
 
       // ส่งข้อมูลไปยัง API
       const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:3001/api/contracts/dormitories/${dormId}/rooms/${roomNumber}`, contractData, {
+      const response = await axios.post(`${API_URL}/api/contracts/dormitories/${dormId}/rooms/${roomNumber}`, contractData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -408,7 +409,7 @@ function MonthlyContract() {
             receipt_note: receiptNote // เพิ่มหมายเหตุใบเสร็จ
           };
 
-          const receiptResponse = await axios.post(`http://localhost:3001/api/receipts/contracts/${contractId}`, receiptData, {
+          const receiptResponse = await axios.post(`${API_URL}/api/receipts/contracts/${contractId}`, receiptData, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -473,7 +474,7 @@ function MonthlyContract() {
   const handleSaveReceiptNote = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:3001/api/receipts/dormitories/${dormId}/default-note`, {
+      const response = await axios.post(`${API_URL}/api/receipts/dormitories/${dormId}/default-note`, {
         note_content: tempReceiptNote,
         receipt_type: 'contract'
       }, {
@@ -502,7 +503,7 @@ function MonthlyContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${dormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -530,7 +531,7 @@ function MonthlyContract() {
       // ดึงข้อมูลจาก InfluxDB ถ้ามีมิเตอร์ดิจิทัล
       if (hasWaterMeter && waterMeterCode) {
         try {
-          const waterResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const waterResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: waterMeterCode
           }, {
             headers: { 
@@ -549,7 +550,7 @@ function MonthlyContract() {
       
       if (hasElectricMeter && electricMeterCode) {
         try {
-          const electricResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const electricResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: electricMeterCode
           }, {
             headers: { 

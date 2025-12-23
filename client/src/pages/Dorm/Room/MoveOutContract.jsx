@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import Pagination from '../../../components/Pagination';
 import ExcelExportButton from '../../../components/ExcelExportButton';
+import API_URL from '../../../config/api';
 
 function MoveOutContract() {
   const navigate = useNavigate();
@@ -61,13 +62,11 @@ function MoveOutContract() {
       // เปลี่ยนจาก move-outs เป็น contracts เพื่อให้ได้ข้อมูลครบ
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `http://localhost:3001/api/contracts/dormitories/${currentDormId}`, {
+        `${API_URL}/api/contracts/dormitories/${currentDormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      console.log('✅ ข้อมูลสัญญาที่ได้รับ:', response.data.length, 'รายการ');
-      
       if (response.data && Array.isArray(response.data)) {
         // กรองเฉพาะสัญญาที่ terminated (ย้ายออกแล้ว)
         let contractsData = response.data.filter(contract => 
@@ -204,13 +203,6 @@ function MoveOutContract() {
     // ใช้ receiptNumber จาก API ที่เป็น receipt_number
     const receiptNumber = moveOutItem.receiptNumber;
     const targetPath = `/dorm/${currentDormId}/move-out/detail/${receiptNumber}`;
-    console.log('🔍 นำทางไปยัง MoveOutDetail:', { 
-      moveOutItem, 
-      receiptNumber, 
-      currentDormId, 
-      targetPath,
-      fullApiUrl: `http://localhost:3001/api/contract-terminations/dormitories/${currentDormId}/move-outs/${receiptNumber}`
-    });
     navigate(targetPath);
   };
 

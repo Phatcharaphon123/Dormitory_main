@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../config/api';
 
 // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
 const formatThaiDate = (dateString) => {
@@ -37,13 +38,13 @@ useEffect(() => {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลห้องและมิเตอร์
-      const res = await axios.get(`http://localhost:3001/api/meter-records/dormitories/${dormId}/rooms-with-meter`, {
+      const res = await axios.get(`${API_URL}/api/meter-records/dormitories/${dormId}/rooms-with-meter`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = res.data;
 
       // ดึงข้อมูลมิเตอร์เพิ่มเติมสำหรับ InfluxDB
-      const metersResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${dormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const metersData = metersResponse.data;
@@ -146,7 +147,7 @@ const fetchInitialMeterReadings = async (floors) => {
             // ดึงข้อมูลมิเตอร์น้ำ
             if (room.hasWaterMeter && room.waterMeterCode) {
               try {
-                const waterResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+                const waterResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
                   measurement: room.waterMeterCode
                 }, {
                   headers: { 
@@ -167,7 +168,7 @@ const fetchInitialMeterReadings = async (floors) => {
             // ดึงข้อมูลมิเตอร์ไฟฟ้า
             if (room.hasElectricMeter && room.electricMeterCode) {
               try {
-                const electricResponse = await axios.post('http://localhost:3001/api/influx/latest-data', {
+                const electricResponse = await axios.post(`${API_URL}/api/influx/latest-data`, {
                   measurement: room.electricMeterCode
                 }, {
                   headers: { 
@@ -373,7 +374,7 @@ const fetchInitialMeterReadings = async (floors) => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(`http://localhost:3001/api/meter-records/dormitories/${dormId}`, {
+      const res = await axios.post(`${API_URL}/api/meter-records/dormitories/${dormId}`, {
         readings,
         recordDate: formData.readingDate
       }, {
@@ -454,7 +455,7 @@ const handleDigitalMeterSync = async () => {
             }
             
             // ดึงข้อมูลล่าสุดจาก InfluxDB
-            const response = await axios.post('http://localhost:3001/api/influx/latest-data', {
+            const response = await axios.post(`${API_URL}/api/influx/latest-data`, {
               measurement: meterCode
             }, {
               headers: { 
@@ -542,7 +543,7 @@ const handleDigitalMeterSync = async () => {
         }
         
         // ดึงข้อมูลล่าสุดจาก InfluxDB
-        const response = await axios.post('http://localhost:3001/api/influx/latest-data', {
+        const response = await axios.post(`${API_URL}/api/influx/latest-data`, {
           measurement: meterCode
         }, {
           headers: { 

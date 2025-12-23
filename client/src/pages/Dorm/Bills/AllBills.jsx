@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import Pagination from '../../../components/Pagination';
 import ExcelExportButton from '../../../components/ExcelExportButton';
 import { IoFileTrayFullSharp } from "react-icons/io5";
+import API_URL from '../../../config/api';
 import axios from 'axios';
 
 function AllBills() {
@@ -25,7 +26,7 @@ function AllBills() {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3001/api/bills/dormitories/${dormId}/invoices/all`, {
+        const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/all`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = response.data;

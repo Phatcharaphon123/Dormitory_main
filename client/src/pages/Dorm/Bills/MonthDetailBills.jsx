@@ -7,6 +7,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import InvoiceReceipt from './InvoiceReceipt/InvoiceReceipt';
 import PaidInvoiceReceipt from './InvoiceReceipt/PaidInvoiceReceipt';
+import API_URL from '../../../config/api';
 
 function MonthDetailBills() {
   const { dormId, invoiceId } = useParams();
@@ -90,7 +91,7 @@ function MonthDetailBills() {
         
         console.log('🔍 กำลังดึงข้อมูลใบแจ้งหนี้:', { dormId, invoiceId });
         
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`, {
+        const res = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -251,7 +252,7 @@ function MonthDetailBills() {
     try {
       console.log('🔍 กำลังดึงประวัติการชำระเงิน:', { dormId, invoiceId });
       
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments`, {
+      const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -419,7 +420,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
   const updateTotals = async (items, payments = paymentHistory) => {
     try {
       // โหลด total ใหม่จาก API
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`, {
+      const res = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -472,7 +473,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
       onConfirm: async () => {
         setShowDeleteBillModal(false);
         try {
-          const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`, {
+          const response = await axios.delete(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`, {
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -520,7 +521,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
 
   const handleSaveEditItem = async () => {
     try {
-      const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/items/${editingItem.id}`, {
+      const response = await axios.put(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/items/${editingItem.id}`, {
         description: editingItem.description,
         rate: editingItem.rate,
         unit_count: editingItem.units
@@ -587,7 +588,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
       async () => {
         setShowConfirmModal(false);
         try {
-          const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/items/${itemId}`, {
+          const response = await axios.delete(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/items/${itemId}`, {
             headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -631,7 +632,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
     const calculatedAmount = newService.units * newService.ratePerUnit;
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/items`, {
+      const response = await axios.post(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/items`, {
         description: newService.description,
         type: serviceType,
         rate: newService.ratePerUnit, // ส่งราคาต่อหน่วย
@@ -742,7 +743,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
               payment_note: paymentData.note || ''
             };
 
-            const apiUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments`;
+            const apiUrl = `${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments`;
             
             console.log('📤 ส่งข้อมูลการชำระเงิน:', {
               url: apiUrl,
@@ -868,7 +869,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
       onConfirm: async () => {
         setShowDeletePaymentModal(false);
         try {
-          const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments/${paymentId}`, {
+          const response = await axios.delete(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}/payments/${paymentId}`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`
             }
@@ -894,7 +895,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
   // ฟังก์ชันโหลดหมายเหตุเริ่มต้นจากตาราง default_receipt_notes
   const loadDefaultNote = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/receipts/dormitories/${dormId}/default-note?receipt_type=monthly`, {
+      const response = await axios.get(`${API_URL}/api/receipts/dormitories/${dormId}/default-note?receipt_type=monthly`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -914,7 +915,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
   // ฟังก์ชันโหลดหมายเหตุการชำระเงินเริ่มต้นจากตาราง default_receipt_notes
   const loadDefaultPaymentNote = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/receipts/dormitories/${dormId}/default-note?receipt_type=payment`, {
+      const response = await axios.get(`${API_URL}/api/receipts/dormitories/${dormId}/default-note?receipt_type=payment`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -940,7 +941,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
     setIsSavingNote(true);
     try {
       // บันทึกลงตาราง default_receipt_notes แทน
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/receipts/dormitories/${dormId}/default-note`, { 
+      const response = await axios.post(`${API_URL}/api/receipts/dormitories/${dormId}/default-note`, { 
         note_content: invoiceNote,
         receipt_type: 'monthly'
       }, {
@@ -972,7 +973,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
   // ฟังก์ชันบันทึกหมายเหตุการชำระเงิน
   const handleSavePaymentNote = async () => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/receipts/dormitories/${dormId}/default-note`, { 
+      const response = await axios.post(`${API_URL}/api/receipts/dormitories/${dormId}/default-note`, { 
         note_content: paymentNoteTemp,
         receipt_type: 'payment'
       }, {
@@ -1022,7 +1023,7 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
         setShowSendEmailModal(false);
         setIsSendingEmail(true);
         try {
-          const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/send-email`, {
+          const response = await axios.post(`${API_URL}/api/bills/dormitories/${dormId}/invoices/send-email`, {
             month: billData.bill_month,
             bills: [parseInt(invoiceId)]
           }, {

@@ -6,6 +6,7 @@ import amphures from "../../../../assets/data/api_amphure.json";
 import tambons from "../../../../assets/data/thai_tambons.json";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../../config/api';
 
 function EditTenantPopup({ isOpen, onClose, onSave, tenantData: initialTenantData }) {
   // ข้อมูลผู้เช่า
@@ -304,10 +305,8 @@ function EditTenantPopup({ isOpen, onClose, onSave, tenantData: initialTenantDat
         deletedVehicleIds
       });
       
-      console.log('🔍 API URL:', `http://localhost:3001/api/tenants/${initialTenantData.tenant_id}`);
-
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:3001/api/tenants/${initialTenantData.tenant_id}`, updatedData, {
+      await axios.put(`${API_URL}/api/tenants/${initialTenantData.tenant_id}`, updatedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

@@ -6,6 +6,7 @@ import { MdGasMeter } from "react-icons/md";
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../config/api';
 
 function AddMeterDigital({ onBack }) {
   const { dormId } = useParams();
@@ -35,7 +36,7 @@ function AddMeterDigital({ onBack }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/meters/dormitories/${dormId}`, {
+      const response = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRoomsData(response.data);
@@ -64,8 +65,8 @@ function AddMeterDigital({ onBack }) {
   const handleSaveMeter = async (meterData) => {
     try {
       const endpoint = meterData.type === 'electric' ? 
-        'http://localhost:3001/api/meters/electric' : 
-        'http://localhost:3001/api/meters/water';
+        `${API_URL}/api/meters/electric` : 
+        `${API_URL}/api/meters/water`;
       
       // รวมวันที่และเวลาติดตั้ง
       const postData = {

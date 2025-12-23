@@ -8,6 +8,7 @@ import ExcelExportButton from '../../components/ExcelExportButton';
 import { FaList } from "react-icons/fa";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../config/api';
 
 
 // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย (สำหรับแสดงในหน้าเว็บ)
@@ -95,9 +96,7 @@ function MeterReading() {
 
     // กรองตามเดือน
     if (filterMonth) {
-      console.log('🔍 Filter Month:', filterMonth);
-      console.log('📅 Sample dates:', filtered.slice(0, 3).map(r => r.date));
-      
+
       const [filterYear, filterMonthNum] = filterMonth.split('-');
       
       filtered = filtered.filter(reading => {
@@ -118,17 +117,8 @@ function MeterReading() {
         
         const matches = method1 || method2 || method3;
         
-        if (!matches) {
-          console.log(`❌ Date ${reading.date} doesn't match filter ${filterMonth}`);
-          console.log(`   Method1 (startsWith): ${method1}`);
-          console.log(`   Method2 (split): ${method2}`);
-          console.log(`   Method3 (Date obj): ${method3}`);
-        }
-        
         return matches;
       });
-      
-      console.log('✅ Filtered results:', filtered.length);
     }
 
     // เรียงลำดับ
@@ -162,7 +152,7 @@ function MeterReading() {
       const fetchMeterReadings = async () => {
         try {
           const token = localStorage.getItem('token');
-          const response = await axios.get(`http://localhost:3001/api/meter-records/dormitories/${dormId}/all`, {
+          const response = await axios.get(`${API_URL}/api/meter-records/dormitories/${dormId}/all`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const records = response.data;
@@ -227,7 +217,7 @@ function MeterReading() {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3001/api/meter-records/dormitories/${dormId}/${deleteItemId}`, {
+      await axios.delete(`${API_URL}/api/meter-records/dormitories/${dormId}/${deleteItemId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

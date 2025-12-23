@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaPrint, FaDownload } from 'react-icons/fa';
 import PrintReceipt from './PrintReceipt';
+import API_URL from '../../../../../config/api';
 
 function ReceiptPrint() {
   const { dormId, contractId } = useParams();
@@ -23,7 +24,7 @@ function ReceiptPrint() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/receipts/contracts/${contractId}`, {
+      const response = await axios.get(`${API_URL}/api/receipts/contracts/${contractId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setReceipt(response.data);

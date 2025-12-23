@@ -6,6 +6,7 @@ import Pagination from '../../../components/Pagination';
 import ExcelExportButton from '../../../components/ExcelExportButton';
 import { FaBusinessTime } from "react-icons/fa6";
 import { BsPersonFillX,BsPersonFillExclamation } from "react-icons/bs";
+import API_URL from '../../../config/api';
 
 // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
 const formatThaiDate = (dateString) => {
@@ -68,19 +69,17 @@ function MoveOutPage() {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:3001/api/contracts/dormitories/${dormId}/moveout-list`, {
+      const res = await axios.get(`${API_URL}/api/contracts/dormitories/${dormId}/moveout-list`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (!res.data || !Array.isArray(res.data)) {
-        console.warn("⚠️ ข้อมูลที่ได้ไม่ใช่ array:", res.data);
         setPendingMoveOuts([]);
         setLoading(false);
         return;
       }
 
       if (res.data.length === 0) {
-        console.log("ℹ️ ไม่มีข้อมูลการย้ายออกสำหรับ dormId:", dormId);
         setPendingMoveOuts([]);
         setLoading(false);
         return;
@@ -315,7 +314,7 @@ function MoveOutPage() {
     try {
       console.log("🔄 กำลังยกเลิกการย้ายออกสำหรับ contract:", selectedMoveOut.id);
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:3001/api/contracts/${selectedMoveOut.id}/cancel-moveout`, {}, {
+      await axios.put(`${API_URL}/api/contracts/${selectedMoveOut.id}/cancel-moveout`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("✅ ยกเลิกการย้ายออกสำเร็จ");

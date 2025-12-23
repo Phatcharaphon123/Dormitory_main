@@ -1,25 +1,18 @@
 import React from 'react';
 
-/**
- * Component สำหรับสร้าง HTML และพิมพ์ใบเสร็จการย้ายออก
- * ปรับปรุงจาก PrintReceipt เพื่อให้เหมาะสมกับใบเสร็จการย้ายออก
- */
 const MoveOutReceiptPrint = {
   // ฟังก์ชันสร้าง receipt items จากข้อมูล move out receipt
   createMoveOutReceiptItems: (moveOutData) => {
-    console.log('📝 สร้าง move out receipt items:', moveOutData);
-    
+
     const formattedItems = [];
 
     // ดึงรายการจาก items
     const allItems = moveOutData.items || [];
     
-    console.log('🔍 Raw items from API:', allItems);
-    
+
     // ถ้าไม่มี items ให้ลองสร้างจากข้อมูลหลัก
     if (allItems.length === 0) {
-      console.log('⚠️ ไม่พบ items ใน moveOutData, จะสร้างรายการเปล่าเพื่อให้สามารถพิมพ์ได้');
-      
+  
       // ถ้าเป็นการคืนเงิน ให้สร้างรายการคืนเงิน
       if (moveOutData.finalAmount < 0) {
         formattedItems.push({
@@ -31,9 +24,6 @@ const MoveOutReceiptPrint = {
           amount: moveOutData.finalAmount // เก็บเป็นลบ
         });
       }
-      // หากไม่มีรายการและไม่ใช่การคืนเงิน ก็ให้ return รายการเปล่า (สามารถพิมพ์ได้)
-      
-      console.log('📝 สร้างรายการจากข้อมูลหลัก:', formattedItems);
       return formattedItems;
     }
     
@@ -41,8 +31,6 @@ const MoveOutReceiptPrint = {
     const chargeItems = allItems.filter(item => ['charge', 'penalty', 'damage', 'cleaning', 'other'].includes(item.type));
     const utilityItems = allItems.filter(item => ['water', 'electric', 'utility', 'meter'].includes(item.type));
     const refundItems = allItems.filter(item => ['refund', 'deposit_refund', 'discount'].includes(item.type));
-
-    console.log('📋 รายการแยกประเภท:', { chargeItems, utilityItems, refundItems });
 
     // เพิ่มรายการค่าใช้จ่าย
     chargeItems.forEach((item, index) => {
@@ -81,16 +69,11 @@ const MoveOutReceiptPrint = {
         amount: amount < 0 ? amount : -Math.abs(amount) // ทำให้เป็นลบเสมอ
       });
     });
-
-    console.log('📋 รายการที่ประมวลผลแล้ว:', formattedItems);
-    
     return formattedItems;
   },
 
   // ฟังก์ชันสร้าง receipt data สำหรับ move out receipt
   createMoveOutReceiptData: (moveOutData, dormData = {}) => {
-    console.log('📋 สร้าง move out receipt data:', { moveOutData, dormData });
-    
     const receiptItems = MoveOutReceiptPrint.createMoveOutReceiptItems(moveOutData);
     
     // คำนวณยอดรวม
@@ -596,12 +579,6 @@ const MoveOutReceiptPrint = {
 
   // ฟังก์ชันพิมพ์ใบเสร็จการย้ายออก
   printMoveOutReceipt: (moveOutData, dormData = {}, receiptNote = '', title = 'ใบเสร็จการย้ายออก', roomNumber = null) => {
-    console.log('🖨️ กำลังพิมพ์ใบเสร็จการย้ายออก...');
-    console.log('📝 moveOutData:', JSON.stringify(moveOutData, null, 2));
-    console.log('📝 dormData:', JSON.stringify(dormData, null, 2));
-    console.log('📝 roomNumber:', roomNumber);
-    console.log('📝 title:', title);
-    
     try {
       // ตรวจสอบข้อมูลที่จำเป็น
       if (!moveOutData) {
@@ -611,12 +588,9 @@ const MoveOutReceiptPrint = {
       }
       
       if (!moveOutData.items || moveOutData.items.length === 0) {
-        console.warn('⚠️ ไม่พบ items ในใบเสร็จ แต่จะดำเนินการพิมพ์ต่อไป');
-        console.log('🔍 กำลังตรวจสอบข้อมูลอื่น...');
-        
+
         // ถ้าไม่มี items แต่มี finalAmount ลบ ให้สร้าง items ให้
         if (moveOutData.finalAmount && moveOutData.finalAmount < 0) {
-          console.log('📝 สร้าง items จาก finalAmount:', moveOutData.finalAmount);
           moveOutData.items = [{
             type: 'refund',
             description: 'คืนเงินมัดจำ',
@@ -626,13 +600,9 @@ const MoveOutReceiptPrint = {
           }];
         } else {
           // สร้างรายการเปล่าเพื่อให้สามารถพิมพ์ได้
-          console.log('📝 สร้างรายการเปล่าเพื่อให้สามารถพิมพ์ได้');
           moveOutData.items = [];
         }
       }
-      
-      console.log('✅ ข้อมูลพร้อมสำหรับพิมพ์');
-      console.log('📋 จำนวนรายการ:', moveOutData.items?.length || 0);
       
       const printContent = MoveOutReceiptPrint.generateMoveOutReceiptHTML(moveOutData, dormData, receiptNote);
       

@@ -5,6 +5,7 @@ import Pagination from "../../../components/Pagination";
 import ExcelExportButton from "../../../components/ExcelExportButton";
 import { RiWaterFlashFill } from "react-icons/ri";
 import axios from 'axios';
+import API_URL from "../../../config/api";
 
 function UtilitySummaryReport() {
   const [utilityData, setUtilityData] = useState({
@@ -69,7 +70,7 @@ function UtilitySummaryReport() {
     try {
       // Step 1: ดึงข้อมูล meter records ของหอพัก
       const meterRecordsRes = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/meter-records`,
+        `${API_URL}/api/bills/dormitories/${dormId}/meter-records`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -143,7 +144,7 @@ function UtilitySummaryReport() {
 
       // Step 2: ดึงข้อมูลห้องและค่าน้ำค่าไฟจาก meter record ที่เลือก
       const roomsRes = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/meter-records/${selectedMeterRecord.meter_record_id}/rooms`,
+        `${API_URL}/api/bills/dormitories/${dormId}/meter-records/${selectedMeterRecord.meter_record_id}/rooms`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -154,7 +155,7 @@ function UtilitySummaryReport() {
 
       // Step 3: ดึงข้อมูลประเภทห้อง
       const roomTypesRes = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/room-types/dormitories/${dormId}`,
+        `${API_URL}/api/room-types/dormitories/${dormId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -261,10 +262,6 @@ function UtilitySummaryReport() {
       });
     });
 
-    console.log('✅ Rooms after filtering:', roomDetails.length);
-
-    // เรียงลำดับตาม sortBy
-    console.log('🔀 Sorting by:', filters.sortBy);
     roomDetails.sort((a, b) => {
       switch (filters.sortBy) {
         case 'water_usage':
@@ -277,14 +274,6 @@ function UtilitySummaryReport() {
           // เรียงตามหมายเลขห้อง (ใช้ natural sort)
           return a.room_number.localeCompare(b.room_number, undefined, { numeric: true });
       }
-    });
-
-    console.log('📊 Final processed data:', {
-      totalWaterUsage,
-      totalElectricityUsage,
-      totalWaterCost,
-      totalElectricityCost,
-      roomsCount: roomDetails.length
     });
 
     setUtilityData({
@@ -304,13 +293,11 @@ function UtilitySummaryReport() {
   };
 
   const handleFilterChange = (key, value) => {
-    console.log('🔄 Filter changed:', key, '=', value);
     setFilters(prev => {
       const newFilters = {
         ...prev,
         [key]: value
       };
-      console.log('📝 New filters state:', newFilters);
       return newFilters;
     });
     // Reset to first page when filter changes

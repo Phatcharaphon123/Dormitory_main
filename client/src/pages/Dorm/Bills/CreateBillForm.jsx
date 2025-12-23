@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../config/api';
 
 function CreateBillForm({ onBack, onBillCreated, existingBills = [] }) {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ function CreateBillForm({ onBack, onBillCreated, existingBills = [] }) {
     setMeterDatePage(1); // reset page when dormId changes
     const fetchMeterDates = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/bills/dormitories/${dormId}/meter-records`, {
+        const response = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/meter-records`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -61,7 +62,7 @@ function CreateBillForm({ onBack, onBillCreated, existingBills = [] }) {
   useEffect(() => {
     const fetchDormitoryData = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/dormitories/${dormId}`, {
+        const response = await axios.get(`${API_URL}/api/dormitories/${dormId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -137,7 +138,7 @@ function CreateBillForm({ onBack, onBillCreated, existingBills = [] }) {
     try {
       console.log('🔍 Fetching meter reading data for record ID:', meterRecordId);
       const response = await axios.get(
-        `http://localhost:3001/api/bills/dormitories/${dormId}/meter-records/${meterRecordId}/rooms`,
+        `${API_URL}/api/bills/dormitories/${dormId}/meter-records/${meterRecordId}/rooms`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -166,8 +167,6 @@ function CreateBillForm({ onBack, onBillCreated, existingBills = [] }) {
         hasExistingBill: room.has_invoice || false
       }));
 
-      console.log('🏠 Processed rooms data:', roomsData);
-      console.log(`📊 Found ${response.data.length} total rooms, ${roomsData.length} rooms with tenants`);
       setAvailableRooms(roomsData);
     } catch (error) {
       console.error('❌ ไม่สามารถดึงข้อมูลห้อง:', error);
@@ -426,8 +425,7 @@ function CreateBillForm({ onBack, onBillCreated, existingBills = [] }) {
           };
         })
       };
-      console.log("🚀 Final Payload", JSON.stringify(payload, null, 2));
-      await axios.post(`http://localhost:3001/api/bills/dormitories/${dormId}/invoices`, payload, {
+      await axios.post(`${API_URL}/api/bills/dormitories/${dormId}/invoices`, payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }

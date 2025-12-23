@@ -9,9 +9,9 @@ import {
   MdBusinessCenter,
   MdRefresh,
 } from "react-icons/md";
-
 import { PiBuildingApartmentFill } from "react-icons/pi";
 import axios from 'axios';
+import API_URL from '../../../config/api';
 
 
 
@@ -49,10 +49,10 @@ function RoomPlan() {
       try {
         const token = localStorage.getItem('token');
         const [roomsRes, typesRes] = await Promise.all([
-          axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}/by-floor`, {
+          axios.get(`${API_URL}/api/rooms/dormitories/${dormId}/by-floor`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`http://localhost:3001/api/room-types/dormitories/${dormId}`, {
+          axios.get(`${API_URL}/api/room-types/dormitories/${dormId}`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);

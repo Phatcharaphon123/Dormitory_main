@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { FaPrint, FaDownload, FaArrowLeft, FaHome } from 'react-icons/fa';
 import MoveOutReceiptPrint from './MoveOutReceiptPrint';
+import API_URL from '../../../../config/api';
 
 function MoveOutReceipt() {
   const { dormId, roomNumber, moveOutReceiptId } = useParams();
@@ -40,7 +41,7 @@ function MoveOutReceipt() {
   const fetchDormData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const dormResponse = await axios.get(`http://localhost:3001/api/dormitories/${dormId}`, {
+      const dormResponse = await axios.get(`${API_URL}/api/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       return dormResponse.data;
@@ -53,7 +54,7 @@ function MoveOutReceipt() {
   const fetchDefaultNote = async () => {
     try {
       const token = localStorage.getItem('token');
-      const noteResponse = await axios.get(`http://localhost:3001/api/receipts/dormitories/${dormId}/default-note?receipt_type=move_out`, {
+      const noteResponse = await axios.get(`${API_URL}/api/receipts/dormitories/${dormId}/default-note?receipt_type=move_out`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (noteResponse.data && noteResponse.data.note_content) {
@@ -98,8 +99,8 @@ function MoveOutReceipt() {
 
       // ดึงข้อมูลการย้ายออก - ใช้ API ใหม่แบบเรียบง่าย
       const apiUrl = moveOutReceiptId 
-        ? `http://localhost:3001/api/move-out-receipts/${moveOutReceiptId}`  // ใช้ move_out_receipt_id (PK)
-        : `http://localhost:3001/api/move-out-receipts/dormitories/${dormId}/rooms/${roomNumber}`;  // ใช้เดิม
+        ? `${API_URL}/api/move-out-receipts/${moveOutReceiptId}`  // ใช้ move_out_receipt_id (PK)
+        : `${API_URL}/api/move-out-receipts/dormitories/${dormId}/rooms/${roomNumber}`;  // ใช้เดิม
       const token = localStorage.getItem('token');
       const response = await axios.get(apiUrl, {
         headers: { Authorization: `Bearer ${token}` }
@@ -110,9 +111,6 @@ function MoveOutReceipt() {
       if (response.data.success) {
         // รวมข้อมูลหอพักเข้ากับข้อมูลการย้ายออก
         const apiData = response.data.data;
-        
-        console.log('🔍 Raw API Data:', apiData);
-        console.log('🔍 API finalAmount:', apiData.finalAmount);
         
         // จัดการข้อมูลให้เป็นรูปแบบเดียวกัน (ใช้ API ใหม่เท่านั้น)
         const basicMoveOutData = {
@@ -172,9 +170,7 @@ function MoveOutReceipt() {
         };
         
         setMoveOutData(basicMoveOutData);
-        
-        console.log('🎯 basicMoveOutData.finalAmount:', basicMoveOutData.finalAmount);
-        
+
         // Validate ข้อมูลสำคัญ
         if (!basicMoveOutData.tenantName || !basicMoveOutData.roomNumber) {
           setTimeout(() => {
@@ -339,9 +335,6 @@ function MoveOutReceipt() {
 
   const handlePrint = () => {
     if (!moveOutData) return;
-
-    console.log('🖨️ เปิด Print Dialog สำหรับใบเสร็จการย้ายออก:', moveOutData);
-
     // เรียกใช้ MoveOutReceiptPrint และเปิด print dialog อัตโนมัติ
     const receiptNote = defaultNote || 'ใบเสร็จการย้ายออกจากหอพัก';
     

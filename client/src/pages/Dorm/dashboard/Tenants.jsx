@@ -16,6 +16,7 @@ import {
   IoCash,
   IoWarning
 } from 'react-icons/io5'
+import API_URL from '../../../config/api'
 
 function Tenants({ building }) {
   const { dormId } = useParams()
@@ -92,7 +93,7 @@ function Tenants({ building }) {
   const fetchTenantData = async () => {
     setLoading(true)
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+      const baseUrl = API_URL
       const token = localStorage.getItem('token')
       
       // Fetch data in parallel

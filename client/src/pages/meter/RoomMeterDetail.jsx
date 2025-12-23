@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaArrowLeft, FaWater, FaBolt, FaCalendarAlt, FaSync, FaTint } from 'react-icons/fa';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../../config/api';
 
 // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
 const formatThaiDate = (dateString) => {
@@ -32,13 +33,13 @@ function RoomMeterDetail() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลห้องทั่วไป
-      const roomResponse = await axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}/rooms/${roomId}/detail`, {
+      const roomResponse = await axios.get(`${API_URL}/api/rooms/dormitories/${dormId}/rooms/${roomId}/detail`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const roomData = roomResponse.data;
       
       // ดึงข้อมูลมิเตอร์แยกต่างหาก
-      const meterResponse = await axios.get(`http://localhost:3001/api/meters/dormitories/${dormId}`, {
+      const meterResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const meterData = meterResponse.data;
@@ -150,7 +151,7 @@ function RoomMeterDetail() {
       console.log('Calling InfluxDB API with measurement:', measurement);
       
       // ดึงข้อมูลล่าสุดจาก InfluxDB
-      const response = await axios.post('http://localhost:3001/api/influx/latest-data', {
+      const response = await axios.post(`${API_URL}/api/influx/latest-data`, {
         measurement: measurement
       }, {
         headers: { 

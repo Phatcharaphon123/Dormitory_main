@@ -4,6 +4,7 @@ import Pagination from "../../../components/Pagination";
 import ExcelExportButton from "../../../components/ExcelExportButton";
 import { HiNewspaper } from "react-icons/hi2";
 import axios from 'axios';
+import API_URL from '../../../config/api';
 
 function MonthlyBillsReport() {
   const [bills, setBills] = useState([]);
@@ -67,10 +68,10 @@ function MonthlyBillsReport() {
       let url;
       if (selectedMonth) {
         // ดึงข้อมูลตามเดือนที่เลือก
-        url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/by-month?month=${selectedMonth}`;
+        url = `${API_URL}/api/bills/dormitories/${dormId}/invoices/by-month?month=${selectedMonth}`;
       } else {
         // ดึงข้อมูลทั้งหมด (ไม่ส่ง parameter month)
-        url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/by-month`;
+        url = `${API_URL}/api/bills/dormitories/${dormId}/invoices/by-month`;
       }
       
       const response = await axios.get(url, {

@@ -5,6 +5,7 @@ import axios from 'axios';
 import bgImage from '../../assets/bg.png';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../config/api';
 
 function Register({ setIsAuthenticated }) {
   const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ function Register({ setIsAuthenticated }) {
     }
 
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/register', {
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
         username: formData.username,
         email: formData.email,
         phone: formData.phone,

@@ -6,6 +6,7 @@ import MoveOutContract from './MoveOutContract';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaRegImage } from "react-icons/fa";
 import axios from 'axios';
+import API_URL from '../../../config/api';
 
 function RoomDetail() {
   const [contractType, setContractType] = useState('contract');
@@ -25,7 +26,7 @@ function RoomDetail() {
 
         const token = localStorage.getItem('token');
         // ดึงข้อมูลห้องพักทั้งหมดตามชั้น
-        const roomsResponse = await axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}/by-floor`, {
+        const roomsResponse = await axios.get(`${API_URL}/api/rooms/dormitories/${dormId}/by-floor`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -49,7 +50,7 @@ function RoomDetail() {
         // ดึงข้อมูลประเภทห้อง ถ้ามี room_type_id
         if (foundRoom.room_type_id) {
           try {
-            const roomTypeResponse = await axios.get(`http://localhost:3001/api/room-types/dormitories/${dormId}/${foundRoom.room_type_id}`, {
+            const roomTypeResponse = await axios.get(`${API_URL}/api/room-types/dormitories/${dormId}/${foundRoom.room_type_id}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             const roomTypeData = roomTypeResponse.data;
@@ -82,12 +83,6 @@ function RoomDetail() {
             setRoomType(roomTypeData);
           } catch (roomTypeError) {
             console.error('❌ Error fetching room type:', roomTypeError);
-            console.error('❌ Error details:', {
-              message: roomTypeError.message,
-              response: roomTypeError.response?.data,
-              status: roomTypeError.response?.status,
-              url: roomTypeError.config?.url
-            });
             console.log('⚠️ Failed to fetch room type, continuing without it');
             // ไม่ throw error ให้หน้าแสดงผลได้แม้ไม่มีข้อมูล room type
           }
@@ -316,7 +311,7 @@ function RoomDetail() {
                     {/* รูปภาพหลัก */}
                     <div className="relative w-full h-48 mb-3">
                       <img
-                        src={`http://localhost:3001/uploads/${roomType.images[currentImageIndex].image_url}`}
+                        src={`${API_URL}/uploads/${roomType.images[currentImageIndex].image_url}`}
                         alt={`ห้อง ${roomData?.number} - รูปที่ ${currentImageIndex + 1}`}
                         className="w-full h-full object-cover rounded-md border border-gray-200"
                         onError={(e) => {
@@ -364,7 +359,7 @@ function RoomDetail() {
                             }`}
                           >
                             <img
-                              src={`http://localhost:3001/uploads/${image.image_url}`}
+                              src={`${API_URL}/uploads/${image.image_url}`}
                               alt={`ห้อง ${roomData?.number} - ภาพย่อ ${index + 1}`}
                               className="w-full h-full object-cover"
                               onError={(e) => {

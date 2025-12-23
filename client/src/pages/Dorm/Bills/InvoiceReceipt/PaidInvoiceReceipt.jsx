@@ -16,7 +16,6 @@ const PaidInvoiceReceipt = {
       );
       
       const invoiceData = invoiceResponse.data;
-      console.log('📄 ข้อมูลใบแจ้งหนี้:', invoiceData);
 
       // ดึงข้อมูลประวัติการชำระเงิน
       const paymentsResponse = await axios.get(
@@ -157,12 +156,6 @@ const PaidInvoiceReceipt = {
   // ฟังก์ชันสร้างข้อมูล receipt หลัก (รองรับข้อมูลจาก API)
   createReceiptData: (invoice, invoiceItems = [], payments = [], tenantInfo = {}, dormitoryInfo = {}, contractInfo = {}) => {
     if (!invoice) return null;
-
-    console.log('🧾 กำลังสร้างข้อมูลใบเสร็จ...');
-    console.log('🧾 ข้อมูลใบแจ้งหนี้:', invoice);
-    console.log('🧾 รายการจาก API:', invoiceItems);
-    console.log('🧾 invoiceItems.length:', invoiceItems.length);
-
     // ใช้ invoice_items จาก API หรือสร้างจากข้อมูลบิล
     const items = invoiceItems.length > 0 
       ? (() => {
@@ -741,11 +734,6 @@ const PaidInvoiceReceipt = {
 
   // ฟังก์ชันพิมพ์ใบเสร็จเดี่ยว (รองรับข้อมูลจาก API)
   printSingleReceipt: (invoice, tenantInfo = {}, dormitoryInfo = {}, contractInfo = {}, invoiceItems = [], defaultNote = '') => {
-    console.log('🖨️ เริ่มพิมพ์ใบเสร็จเดี่ยว');
-    console.log('📄 ข้อมูล Invoice:', invoice);
-    console.log('💰 วิธีการชำระเงิน:', invoice.payment_method);
-    console.log('🧾 ข้อมูล Invoice Items:', invoiceItems);
-    
     const receiptData = PaidInvoiceReceipt.createReceiptData(
       invoice, 
       invoiceItems,

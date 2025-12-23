@@ -15,6 +15,7 @@ import {
   IoPieChart,
   IoWarning
 } from 'react-icons/io5'
+import API_URL from '../../../config/api'
 
 function Utilities({ building }) {
   const { dormId } = useParams()
@@ -59,7 +60,7 @@ function Utilities({ building }) {
   const fetchUtilityData = async () => {
     setLoading(true)
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+      const baseUrl = API_URL
       const token = localStorage.getItem('token')
       
       // Fetch data in parallel

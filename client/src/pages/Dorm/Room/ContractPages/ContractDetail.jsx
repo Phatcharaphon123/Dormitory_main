@@ -11,7 +11,7 @@ import MoveOutPopup from './MoveOutPopup';
 import EditTenantPopup from './EditTenantPopup';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import API_URL from '../../../../config/api';
 
 function ContractDetail() {
   const { dormId, contractId } = useParams();
@@ -45,7 +45,7 @@ function ContractDetail() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/contracts/${contractId}`, {
+      const response = await axios.get(`${API_URL}/api/contracts/${contractId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setContract(response.data);
@@ -61,7 +61,7 @@ function ContractDetail() {
   const fetchContractServices = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/contracts/${contractId}/services`, {
+      const response = await axios.get(`${API_URL}/api/contracts/${contractId}/services`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setServices(response.data);
@@ -102,7 +102,7 @@ function ContractDetail() {
     try {
       // เรียก API เพื่อบันทึกข้อมูลสัญญาที่แก้ไข
       const token = localStorage.getItem('token');
-      const response = await axios.put(`http://localhost:3001/api/contracts/${contractId}`, updatedContract, {
+      const response = await axios.put(`${API_URL}/api/contracts/${contractId}`, updatedContract, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -165,7 +165,7 @@ function ContractDetail() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:3001/api/contracts/${contractId}/services`, {
+      const response = await axios.post(`${API_URL}/api/contracts/${contractId}/services`, {
         name: serviceName.trim(),
         price: Number(servicePrice),
         quantity: Number(serviceQuantity)
@@ -198,7 +198,7 @@ function ContractDetail() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.delete(`http://localhost:3001/api/contracts/${contractId}/services/${serviceToDelete.id}`, {
+      const response = await axios.delete(`${API_URL}/api/contracts/${contractId}/services/${serviceToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -230,7 +230,7 @@ function ContractDetail() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(`http://localhost:3001/api/contracts/${contractId}/services/${editingServiceId}`, {
+      const response = await axios.put(`${API_URL}/api/contracts/${contractId}/services/${editingServiceId}`, {
         name: editingServiceData.name.trim(),
         price: Number(editingServiceData.price),
         quantity: Number(editingServiceData.quantity)

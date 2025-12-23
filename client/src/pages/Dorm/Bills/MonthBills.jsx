@@ -9,6 +9,7 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
+import API_URL from '../../../config/api';
 import 'react-toastify/dist/ReactToastify.css';
 
 function MonthBills() {
@@ -61,7 +62,7 @@ const formatBillMonth = (billMonth) => {
     const fetchAvailableMonths = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/available-months`, {
+        const res = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/available-months`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -88,7 +89,7 @@ const formatBillMonth = (billMonth) => {
     const fetchInvoiceSettings = async () => {
       try {
         // โหลดข้อมูลหอพักสำหรับ invoice
-        const dormRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/dormitories/${dormId}`, {
+        const dormRes = await axios.get(`${API_URL}/api/dormitories/${dormId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
           }
@@ -132,7 +133,7 @@ const formatBillMonth = (billMonth) => {
     const fetchBills = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/by-month`, {
+        const res = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/by-month`, {
           params: { month: selectedMonth },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -240,7 +241,7 @@ const formatBillMonth = (billMonth) => {
     
     // รีเฟรชรายการเดือนที่มีบิล
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/available-months`, {
+      const res = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/available-months`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -261,7 +262,7 @@ const formatBillMonth = (billMonth) => {
 
       // รีเฟรชข้อมูลบิลในเดือนปัจจุบัน/ใหม่
       if (newSelectedMonth) {
-        const billRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/by-month`, {
+        const billRes = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/by-month`, {
           params: { month: newSelectedMonth },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -362,7 +363,7 @@ const formatBillMonth = (billMonth) => {
 
     setLoading(true);
     try {
-      const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/unpaid`, {
+      const response = await axios.delete(`${API_URL}/api/bills/dormitories/${dormId}/invoices/unpaid`, {
         data: { month: selectedMonth },
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -370,7 +371,7 @@ const formatBillMonth = (billMonth) => {
       });
       
       // อัปเดต state โดยการดึงข้อมูลใหม่
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/bills/dormitories/${dormId}/invoices/by-month`, {
+      const res = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/by-month`, {
         params: { month: selectedMonth },
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
