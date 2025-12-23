@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Prompt', 'Roboto', sans-serif !important;
+}
+
+/* Print styles for receipts */
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  
+  .print\:rounded-none {
+    border-radius: 0 !important;
+  }
+  
+  @page {
+    margin: 0.5in;
+  }
+  
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  * {
+    box-shadow: none !important;
+  }
+}

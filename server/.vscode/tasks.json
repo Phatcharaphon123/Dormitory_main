@@ -1,0 +1,89 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Backend Server",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Start Backend",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Start Backend Server",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Test Server",
+			"type": "shell",
+			"command": "node test_server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend Server",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Start Backend",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend Debug Server",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend Server",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend Server Restart",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend Server Clean",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend Server After Fix",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Backend Server",
+			"type": "shell",
+			"command": "node server.js",
+			"isBackground": true,
+			"group": "build"
+		}
+	]
+}

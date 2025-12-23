@@ -1,0 +1,14 @@
+const express = require('express');
+const router = express.Router();
+const roomStatusController = require('../controllers/roomStatusController');
+const authMiddleware = require('../middleware/authMiddleware');
+
+/* ─────────────── 🔹 สถานะห้อง ─────────────── */
+
+// อัปเดตสถานะการว่างของห้องทั้งหมด
+router.put('/:dormId/update-all', authMiddleware, roomStatusController.updateRoomAvailability);
+
+// แก้ไขสถานะห้องเฉพาะห้อง
+router.put('/:dormId/rooms/:roomNumber/fix', authMiddleware, roomStatusController.fixRoomStatus);
+
+module.exports = router;
