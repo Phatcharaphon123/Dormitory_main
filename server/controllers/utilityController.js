@@ -1,6 +1,6 @@
 const pool = require('../db');
 
-// 📌 สร้างหรืออัปเดตค่าน้ำ-ไฟของหอพัก
+//  สร้างหรืออัปเดตค่าน้ำ-ไฟของหอพัก
 exports.upsertUtilityRates = async (req, res) => {
   const dormId = req.params.dormId;
   const { water_rate, electricity_rate } = req.body;
@@ -50,7 +50,7 @@ exports.upsertUtilityRates = async (req, res) => {
   }
 };
 
-// 📥 ดึงค่าน้ำ-ไฟของหอพัก
+//  ดึงค่าน้ำ-ไฟของหอพัก
 exports.getUtilityRates = async (req, res) => {
   const dormId = req.params.dormId;
 
@@ -80,7 +80,7 @@ exports.getUtilityRates = async (req, res) => {
   }
 };
 
-// 📊 ดึงสรุปข้อมูลการใช้สาธารณูปโภค
+//  ดึงสรุปข้อมูลการใช้สาธารณูปโภค
 exports.getUtilitySummary = async (req, res) => {
   const dormId = req.params.dormId;
   const queryYear = req.query.year || new Date().getFullYear();
@@ -128,7 +128,7 @@ exports.getUtilitySummary = async (req, res) => {
   }
 };
 
-// 📊 ดึงข้อมูลการใช้รายเดือน
+//  ดึงข้อมูลการใช้รายเดือน
 exports.getMonthlyUtilityData = async (req, res) => {
   const dormId = req.params.dormId;
   const year = req.query.year || new Date().getFullYear();
@@ -178,7 +178,7 @@ exports.getMonthlyUtilityData = async (req, res) => {
   }
 };
 
-// 📊 ดึงข้อมูลการใช้รายปี
+//  ดึงข้อมูลการใช้รายปี
 exports.getYearlyUtilityData = async (req, res) => {
   const dormId = req.params.dormId;
 
@@ -214,7 +214,7 @@ exports.getYearlyUtilityData = async (req, res) => {
   }
 };
 
-// 📊 ดึงข้อมูลการใช้รายวัน (30 วันย้อนหลัง)
+//  ดึงข้อมูลการใช้รายวัน (30 วันย้อนหลัง)
 exports.getDailyUtilityData = async (req, res) => {
   const dormId = req.params.dormId;
 

@@ -8,6 +8,7 @@ exports.DormitoryLatest = async (req, res) => {
       res.status(500).json({ message: 'Failed to fetch car data', error: String(error) });
     }
   }
+  
 exports.Dormitory = async (req, res) => { 
   try {
     const results = await fetchSensorDormitory();
