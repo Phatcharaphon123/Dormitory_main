@@ -1,91 +1,84 @@
-const pool = require('../db');
+const prisma = require('../config/prisma');
 
 // ดึงข้อมูลมิเตอร์ทั้งหมดของหอพัก
 exports.getDormMeters = async (req, res) => {
   const { dormId } = req.params;
+  const dormIdInt = parseInt(dormId);
 
   try {
     // ดึงข้อมูลห้องพร้อมผู้เช่า
-    const roomsQuery = `
-      SELECT 
-        r.room_id,
-        r.room_number,
-        r.floor_number,
-        r.available,
-        COALESCE(t.first_name || ' ' || t.last_name, null) as tenant_name,
-        c.status as contract_status
-      FROM rooms r
-      LEFT JOIN contracts c ON r.room_id = c.room_id AND c.status = 'active'
-      LEFT JOIN tenants t ON c.tenant_id = t.tenant_id
-      WHERE r.dorm_id = $1
-      ORDER BY r.floor_number, r.room_number
-    `;
-    const roomsResult = await pool.query(roomsQuery, [dormId]);
-    
-    // ดึงข้อมูลมิเตอร์ไฟฟ้า
-    const electricQuery = `
-      SELECT me.room_id, me.electricity_meter_code, me.updated_at, me.installation_date
-      FROM meter_electricity me
-      JOIN rooms r ON me.room_id = r.room_id
-      WHERE r.dorm_id = $1
-    `;
-    const electricResult = await pool.query(electricQuery, [dormId]);
-    
-    // ดึงข้อมูลมิเตอร์น้ำ
-    const waterQuery = `
-      SELECT mw.room_id, mw.water_meter_code, mw.updated_at, mw.installation_date
-      FROM meter_water mw
-      JOIN rooms r ON mw.room_id = r.room_id
-      WHERE r.dorm_id = $1
-    `;
-    const waterResult = await pool.query(waterQuery, [dormId]);
-
-    // จัดกลุ่มข้อมูลมิเตอร์ตาม room_id
-    const electricMeters = {};
-    electricResult.rows.forEach(meter => {
-      electricMeters[meter.room_id] = {
-        code: meter.electricity_meter_code,
-        updatedAt: meter.updated_at,
-        installationDate: meter.installation_date
-      };
-    });
-
-    const waterMeters = {};
-    waterResult.rows.forEach(meter => {
-      waterMeters[meter.room_id] = {
-        code: meter.water_meter_code,
-        updatedAt: meter.updated_at,
-        installationDate: meter.installation_date
-      };
+    const rooms = await prisma.rooms.findMany({
+      where: {
+        dorm_id: dormIdInt
+      },
+      include: {
+        contracts: {
+          where: {
+            status: 'active'
+          },
+          include: {
+            tenants: {
+              select: {
+                first_name: true,
+                last_name: true
+              }
+            }
+          }
+        },
+        meter_electricity: {
+          select: {
+            electricity_meter_code: true,
+            updated_at: true,
+            installation_date: true
+          }
+        },
+        meter_water: {
+          select: {
+            water_meter_code: true,
+            updated_at: true,
+            installation_date: true
+          }
+        }
+      },
+      orderBy: [
+        { floor_number: 'asc' },
+        { room_number: 'asc' }
+      ]
     });
 
     // รวมข้อมูลห้องกับมิเตอร์
-    const roomsWithMeters = roomsResult.rows.map(room => ({
-      roomId: room.room_id,
-      roomNumber: room.room_number,
-      floor: room.floor_number,
-      available: room.available,
-      tenant: room.tenant_name,
-      contractStatus: room.contract_status,
-      meters: {
-        electric: electricMeters[room.room_id] ? {
-          installed: true,
-          code: electricMeters[room.room_id].code,
-          updatedAt: electricMeters[room.room_id].updatedAt,
-          installationDate: electricMeters[room.room_id].installationDate
-        } : {
-          installed: false
-        },
-        water: waterMeters[room.room_id] ? {
-          installed: true,
-          code: waterMeters[room.room_id].code,
-          updatedAt: waterMeters[room.room_id].updatedAt,
-          installationDate: waterMeters[room.room_id].installationDate
-        } : {
-          installed: false
+    const roomsWithMeters = rooms.map(room => {
+      const activeContract = room.contracts && room.contracts.length > 0 ? room.contracts[0] : null;
+      const tenant = activeContract?.tenants;
+      const tenantName = tenant ? `${tenant.first_name} ${tenant.last_name}` : null;
+      
+      return {
+        roomId: room.room_id,
+        roomNumber: room.room_number,
+        floor: room.floor_number,
+        available: room.available,
+        tenant: tenantName,
+        contractStatus: activeContract?.status || null,
+        meters: {
+          electric: room.meter_electricity ? {
+            installed: true,
+            code: room.meter_electricity.electricity_meter_code,
+            updatedAt: room.meter_electricity.updated_at,
+            installationDate: room.meter_electricity.installation_date
+          } : {
+            installed: false
+          },
+          water: room.meter_water ? {
+            installed: true,
+            code: room.meter_water.water_meter_code,
+            updatedAt: room.meter_water.updated_at,
+            installationDate: room.meter_water.installation_date
+          } : {
+            installed: false
+          }
         }
-      }
-    }));
+      };
+    });
 
     // จัดกลุ่มตามชั้น
     const groupedByFloor = {};
@@ -107,45 +100,63 @@ exports.getDormMeters = async (req, res) => {
 // เพิ่มมิเตอร์ไฟฟ้า
 exports.addElectricMeter = async (req, res) => {
   const { roomId, meterCode, installationDate, installationTime } = req.body;
+  const roomIdInt = parseInt(roomId);
 
   try {
     // รวมวันที่และเวลาติดตั้ง
     let installationDateTime = null;
     if (installationDate && installationTime) {
-      installationDateTime = `${installationDate} ${installationTime}:00`;
+      installationDateTime = new Date(`${installationDate} ${installationTime}:00`);
     }
 
     // ตรวจสอบว่ามิเตอร์ใน room นี้มีอยู่แล้วหรือไม่
-    const existingMeter = await pool.query(
-      'SELECT * FROM meter_electricity WHERE room_id = $1',
-      [roomId]
-    );
+    const existingMeter = await prisma.meter_electricity.findFirst({
+      where: {
+        room_id: roomIdInt
+      }
+    });
 
-    if (existingMeter.rows.length > 0) {
+    let result;
+    if (existingMeter) {
       // อัปเดตมิเตอร์ที่มีอยู่
-      const updateQuery = installationDateTime ? 
-        'UPDATE meter_electricity SET electricity_meter_code = $1, installation_date = $3, updated_at = CURRENT_TIMESTAMP WHERE room_id = $2 RETURNING *' :
-        'UPDATE meter_electricity SET electricity_meter_code = $1, updated_at = CURRENT_TIMESTAMP WHERE room_id = $2 RETURNING *';
+      const updateData = {
+        electricity_meter_code: meterCode,
+        updated_at: new Date()
+      };
       
-      const params = installationDateTime ? [meterCode, roomId, installationDateTime] : [meterCode, roomId];
-      const result = await pool.query(updateQuery, params);
+      if (installationDateTime) {
+        updateData.installation_date = installationDateTime;
+      }
+      
+      result = await prisma.meter_electricity.update({
+        where: {
+          room_id: roomIdInt
+        },
+        data: updateData
+      });
       
       res.json({ 
         message: 'อัปเดตมิเตอร์ไฟฟ้าสำเร็จ',
-        meter: result.rows[0]
+        meter: result
       });
     } else {
       // เพิ่มมิเตอร์ใหม่
-      const insertQuery = installationDateTime ?
-        'INSERT INTO meter_electricity (room_id, electricity_meter_code, installation_date) VALUES ($1, $2, $3) RETURNING *' :
-        'INSERT INTO meter_electricity (room_id, electricity_meter_code) VALUES ($1, $2) RETURNING *';
+      const createData = {
+        room_id: roomIdInt,
+        electricity_meter_code: meterCode
+      };
       
-      const params = installationDateTime ? [roomId, meterCode, installationDateTime] : [roomId, meterCode];
-      const result = await pool.query(insertQuery, params);
+      if (installationDateTime) {
+        createData.installation_date = installationDateTime;
+      }
+      
+      result = await prisma.meter_electricity.create({
+        data: createData
+      });
       
       res.json({ 
         message: 'เพิ่มมิเตอร์ไฟฟ้าสำเร็จ',
-        meter: result.rows[0]
+        meter: result
       });
     }
   } catch (error) {
@@ -157,45 +168,63 @@ exports.addElectricMeter = async (req, res) => {
 // เพิ่มมิเตอร์น้ำ
 exports.addWaterMeter = async (req, res) => {
   const { roomId, meterCode, installationDate, installationTime } = req.body;
+  const roomIdInt = parseInt(roomId);
 
   try {
     // รวมวันที่และเวลาติดตั้ง
     let installationDateTime = null;
     if (installationDate && installationTime) {
-      installationDateTime = `${installationDate} ${installationTime}:00`;
+      installationDateTime = new Date(`${installationDate} ${installationTime}:00`);
     }
 
     // ตรวจสอบว่ามิเตอร์ใน room นี้มีอยู่แล้วหรือไม่
-    const existingMeter = await pool.query(
-      'SELECT * FROM meter_water WHERE room_id = $1',
-      [roomId]
-    );
+    const existingMeter = await prisma.meter_water.findFirst({
+      where: {
+        room_id: roomIdInt
+      }
+    });
 
-    if (existingMeter.rows.length > 0) {
+    let result;
+    if (existingMeter) {
       // อัปเดตมิเตอร์ที่มีอยู่
-      const updateQuery = installationDateTime ? 
-        'UPDATE meter_water SET water_meter_code = $1, installation_date = $3, updated_at = CURRENT_TIMESTAMP WHERE room_id = $2 RETURNING *' :
-        'UPDATE meter_water SET water_meter_code = $1, updated_at = CURRENT_TIMESTAMP WHERE room_id = $2 RETURNING *';
+      const updateData = {
+        water_meter_code: meterCode,
+        updated_at: new Date()
+      };
       
-      const params = installationDateTime ? [meterCode, roomId, installationDateTime] : [meterCode, roomId];
-      const result = await pool.query(updateQuery, params);
+      if (installationDateTime) {
+        updateData.installation_date = installationDateTime;
+      }
+      
+      result = await prisma.meter_water.update({
+        where: {
+          room_id: roomIdInt
+        },
+        data: updateData
+      });
       
       res.json({ 
         message: 'อัปเดตมิเตอร์น้ำสำเร็จ',
-        meter: result.rows[0]
+        meter: result
       });
     } else {
       // เพิ่มมิเตอร์ใหม่
-      const insertQuery = installationDateTime ?
-        'INSERT INTO meter_water (room_id, water_meter_code, installation_date) VALUES ($1, $2, $3) RETURNING *' :
-        'INSERT INTO meter_water (room_id, water_meter_code) VALUES ($1, $2) RETURNING *';
+      const createData = {
+        room_id: roomIdInt,
+        water_meter_code: meterCode
+      };
       
-      const params = installationDateTime ? [roomId, meterCode, installationDateTime] : [roomId, meterCode];
-      const result = await pool.query(insertQuery, params);
+      if (installationDateTime) {
+        createData.installation_date = installationDateTime;
+      }
+      
+      result = await prisma.meter_water.create({
+        data: createData
+      });
       
       res.json({ 
         message: 'เพิ่มมิเตอร์น้ำสำเร็จ',
-        meter: result.rows[0]
+        meter: result
       });
     }
   } catch (error) {
@@ -207,14 +236,16 @@ exports.addWaterMeter = async (req, res) => {
 // ลบมิเตอร์ไฟฟ้า
 exports.removeElectricMeter = async (req, res) => {
   const { roomId } = req.params;
+  const roomIdInt = parseInt(roomId);
 
   try {
-    const result = await pool.query(
-      'DELETE FROM meter_electricity WHERE room_id = $1 RETURNING *',
-      [roomId]
-    );
+    const result = await prisma.meter_electricity.deleteMany({
+      where: {
+        room_id: roomIdInt
+      }
+    });
 
-    if (result.rows.length === 0) {
+    if (result.count === 0) {
       return res.status(404).json({ error: 'ไม่พบมิเตอร์ไฟฟ้าในห้องนี้' });
     }
 
@@ -228,14 +259,16 @@ exports.removeElectricMeter = async (req, res) => {
 // ลบมิเตอร์น้ำ
 exports.removeWaterMeter = async (req, res) => {
   const { roomId } = req.params;
+  const roomIdInt = parseInt(roomId);
 
   try {
-    const result = await pool.query(
-      'DELETE FROM meter_water WHERE room_id = $1 RETURNING *',
-      [roomId]
-    );
+    const result = await prisma.meter_water.deleteMany({
+      where: {
+        room_id: roomIdInt
+      }
+    });
 
-    if (result.rows.length === 0) {
+    if (result.count === 0) {
       return res.status(404).json({ error: 'ไม่พบมิเตอร์น้ำในห้องนี้' });
     }
 

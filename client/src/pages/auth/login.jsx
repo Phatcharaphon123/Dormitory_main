@@ -33,7 +33,7 @@ function Login() {
         login(data.token, data.user);
         toast.success('เข้าสู่ระบบสำเร็จ!');
         setTimeout(() => {
-          navigate('/youdorm');
+          navigate('/dashboard');
         }, 1500); // รอให้ toast แสดงก่อนเปลี่ยนหน้า
       } else {
         toast.error(data.message || 'เข้าสู่ระบบไม่สำเร็จ');

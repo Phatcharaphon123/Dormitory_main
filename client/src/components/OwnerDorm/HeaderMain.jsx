@@ -2,57 +2,29 @@ import { useEffect, useState } from "react";
 import { IoPersonCircle } from "react-icons/io5";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { useNavigate, useParams } from "react-router-dom";
-import API_URL from "../../../utils/api";
+import { useNavigate } from "react-router-dom";
+import API_URL from "../../config/api";
 
 const HeaderMain = () => {
-  const [userName, setUserName] = useState("Loading...");
   const [currentTime, setCurrentTime] = useState('');
-  const [dormName, setDormName] = useState("");
-  const { dormId } = useParams(); 
-  
+  const [userName, setUserName] = useState("Loading...");
   useEffect(() => {
-    const fetchUserNameAndDorm = async () => {
+    const fetchUserName = async () => {
       const token = localStorage.getItem("token");
-      if (!token) {
-        setUserName("ไม่พบชื่อผู้ใช้");
-        return;
-      }
-      // ดึง id จาก payload ของ JWT
-      let id = null;
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        id = payload.id || payload.userId;
-      } catch (e) {
-        setUserName("ไม่พบชื่อผู้ใช้");
-        return;
-      }
-      try {
-        const res = await axios.get(`${API_URL}/api/userall/${id}`, {
+        const res = await axios.get(`${API_URL}/api/infoownerdorm`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        console.log(res.data); 
         setUserName(res.data.username);
       } catch (err) {
         setUserName("ไม่พบชื่อผู้ใช้");
       }
-      // ดึงชื่อหอพักจาก URL parameter
-      if (dormId) {
-        try {
-          const dormRes = await axios.get(`${API_URL}/api/getdorminfobyid/${dormId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          setDormName(dormRes.data.dormName);
-        } catch (e) {
-          setDormName("ไม่พบชื่อหอพัก");
-        }
-      }
     };
-    fetchUserNameAndDorm();
-  }, [dormId]); // เพิ่ม dormId ใน dependency array
+    fetchUserName();
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -67,6 +39,7 @@ const HeaderMain = () => {
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
+
 
   const [isOpen, setIsOpen] = useState(false); // 1. สร้าง State ไว้เช็ค เปิด/ปิด
   const navigate = useNavigate();
@@ -100,14 +73,8 @@ const HeaderMain = () => {
       <header className="bg-yellow-400 flex items-center h-16 relative z-30 shadow-md">
         <div className="flex items-center justify-between mx-auto w-full max-w-8xl py-3 px-6 ">
           {/* เวลามุมซ้าย */}
-          <div className="text-gray-700 font-bold text-sm flex items-center gap-2">
+          <div className="text-gray-700 font-bold text-sm  flex items-center gap-2">
             {currentTime}
-          </div>
-          {/* ชื่อหอพักตรงกลาง */}
-          <div className="flex-1 flex justify-center items-center">
-              <span className="text-blue-900 font-bold text-lg truncate max-w-xs text-center">
-                หอพัก: {dormName}
-              </span>
           </div>
           {/* ส่วนขวา: Profile Dropdown */}
           {/* 2. สร้าง div ครอบ ใส่ relative เพื่อเป็นจุดอ้างอิง */}
@@ -144,7 +111,7 @@ const HeaderMain = () => {
                       className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors text-left cursor-pointer"
                       onClick={() => {
                         setIsOpen(false);
-                        navigate('/ownerdorm/account');
+                        navigate('/profile');
                       }}
                     >
                       Profile

@@ -11,6 +11,7 @@ import provinces from "../../../../assets/data/api_province.json";
 import amphures from "../../../../assets/data/api_amphure.json";
 import tambons from "../../../../assets/data/thai_tambons.json";
 import { toast, ToastContainer } from 'react-toastify';
+import API_URL from "../../../../config/api";
 import 'react-toastify/dist/ReactToastify.css';
 
 // ตั้งค่า icon สำหรับ leaflet
@@ -251,7 +252,7 @@ function AddDormInfo() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post("http://localhost:3001/api/dormitories", data, {
+      const response = await axios.post(`${API_URL}/api/dormitories`, data, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

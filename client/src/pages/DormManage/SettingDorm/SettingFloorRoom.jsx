@@ -6,6 +6,7 @@ import { IoNewspaper } from "react-icons/io5";
 import { PiSealWarningFill } from "react-icons/pi";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../config/api';
 
 function SettingFloorRoom() {
   const { dormId } = useParams(); // ดึง dormId จาก URL parameter (ใช้ชื่อเดียวกับ route)
@@ -31,7 +32,7 @@ function SettingFloorRoom() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}/by-floor`, {
+      const response = await axios.get(`${API_URL}/api/rooms/dormitories/${dormId}/by-floor`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -65,7 +66,7 @@ function SettingFloorRoom() {
   const fetchRoomsData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/rooms/dormitories/${dormId}/check-data`, {
+      const response = await axios.get(`${API_URL}/api/rooms/dormitories/${dormId}/check-data`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -83,7 +84,7 @@ function SettingFloorRoom() {
       setSaving(true);
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `http://localhost:3001/api/rooms/dormitories/${dormId}`,
+        `${API_URL}/api/rooms/dormitories/${dormId}`,
         { floors: floorsData },
         {
           headers: {

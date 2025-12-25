@@ -1,0 +1,435 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model bill_send_history {
+  bill_send_history_id Int       @id @default(autoincrement())
+  bill_id              Int?
+  send_method          String    @db.VarChar(50)
+  send_to              String    @db.VarChar(255)
+  send_status          String    @default("pending") @db.VarChar(20)
+  send_date            DateTime? @default(now()) @db.Timestamp(6)
+  error_message        String?
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  updated_at           DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model contracts {
+  contract_id          Int                 @id @default(autoincrement())
+  tenant_id            Int
+  room_id              Int
+  room_type_id         Int?
+  contract_start_date  DateTime            @db.Date
+  contract_end_date    DateTime?           @db.Date
+  deposit_monthly      Decimal             @default(0) @db.Decimal(10, 2)
+  advance_amount       Decimal             @default(0) @db.Decimal(10, 2)
+  water_meter_start    Int?                @default(0)
+  electric_meter_start Int?                @default(0)
+  status               String?             @default("active") @db.VarChar(20)
+  created_at           DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?           @default(now()) @db.Timestamp(6)
+  moveout_notice_date  DateTime?           @db.Date
+  notice_created_at    DateTime?           @default(now()) @db.Timestamp(6)
+  monthly_rent         Decimal             @default(0) @db.Decimal(10, 2)
+  room_type_name       String?             @db.VarChar(100)
+  water_meter_end      Int?
+  electric_meter_end   Int?
+  termination_date     DateTime?           @db.Timestamp(6)
+  rooms                rooms               @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
+  room_types           room_types?         @relation(fields: [room_type_id], references: [room_type_id], onDelete: NoAction, onUpdate: NoAction)
+  tenants              tenants             @relation(fields: [tenant_id], references: [tenant_id], onDelete: Cascade, onUpdate: NoAction)
+  monthly_service      monthly_service[]
+  move_in_receipts     move_in_receipts[]
+  move_out_receipts    move_out_receipts[]
+
+  @@index([room_id], map: "idx_contracts_room_id")
+  @@index([status], map: "idx_contracts_status")
+  @@index([tenant_id], map: "idx_contracts_tenant_id")
+  @@index([termination_date], map: "idx_contracts_termination_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model default_receipt_notes {
+  default_receipt_note_id Int         @id @default(autoincrement())
+  dorm_id                 Int
+  note_content            String?     @default("")
+  created_at              DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?   @default(now()) @db.Timestamp(6)
+  receipt_type            String      @default("monthly") @db.VarChar(50)
+  dormitories             dormitories @relation(fields: [dorm_id], references: [dorm_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([dorm_id, receipt_type], map: "unique_dorm_receipt_type")
+  @@index([dorm_id], map: "idx_default_receipt_notes_dorm_id")
+}
+
+model dormitories {
+  dorm_id               Int                     @id @default(autoincrement())
+  name                  String                  @db.VarChar(255)
+  phone                 String?                 @db.VarChar(20)
+  email                 String?                 @db.VarChar(255)
+  image_filename        String?                 @db.VarChar(255)
+  address               String?
+  province              String?                 @db.VarChar(100)
+  district              String?                 @db.VarChar(100)
+  subdistrict           String?                 @db.VarChar(100)
+  latitude              Decimal?                @db.Decimal(10, 8)
+  longitude             Decimal?                @db.Decimal(11, 8)
+  floors                Int?                    @default(1)
+  total_rooms           Int?                    @default(0)
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamp(6)
+  payment_due_day       Int?
+  late_fee_per_day      Decimal?                @db.Decimal(10, 2)
+  auto_apply_late_fee   Boolean?                @default(false)
+  user_id               Int
+  default_receipt_notes default_receipt_notes[]
+  users                 users                   @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_dormitories_user")
+  invoice_receipts      invoice_receipts[]
+  meter_records         meter_records[]
+  monthly_invoices      monthly_invoices[]
+  room_types            room_types[]
+  rooms                 rooms[]
+
+  @@index([user_id], map: "idx_dormitories_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoice_receipt_items {
+  invoice_receipt_item_id Int               @id(map: "invoice_items_pkey1") @default(autoincrement())
+  invoice_receipt_id      Int?
+  item_type               String
+  description             String
+  unit_count              Int?              @default(1)
+  price                   Decimal           @db.Decimal(10, 2)
+  amount                  Decimal?          @db.Decimal
+  invoice_receipts        invoice_receipts? @relation(fields: [invoice_receipt_id], references: [invoice_receipt_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model invoice_receipts {
+  invoice_receipt_id    Int                     @id(map: "invoice_items_pkey") @default(autoincrement())
+  monthly_invoice_id    Int?
+  dorm_id               Int?
+  utility_rate_id       Int?
+  room_id               Int?
+  tenant_id             Int?
+  invoice_number        String?                 @db.VarChar(50)
+  total                 Decimal?                @db.Decimal(10, 2)
+  status                String?                 @db.VarChar(20)
+  bill_month            DateTime?               @db.Date
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamp(6)
+  due_date              DateTime?               @db.Date
+  paid_date             DateTime?               @db.Date
+  invoice_receipt_items invoice_receipt_items[]
+  dormitories           dormitories?            @relation(fields: [dorm_id], references: [dorm_id], onUpdate: NoAction)
+  monthly_invoices      monthly_invoices?       @relation(fields: [monthly_invoice_id], references: [monthly_invoice_id], onUpdate: NoAction)
+  rooms                 rooms?                  @relation(fields: [room_id], references: [room_id], onUpdate: NoAction)
+  tenants               tenants?                @relation(fields: [tenant_id], references: [tenant_id], onUpdate: NoAction)
+  utility_rates         utility_rates?          @relation(fields: [utility_rate_id], references: [utility_rate_id], onUpdate: NoAction)
+  payments              payments[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model meter_electricity {
+  room_id                Int       @id
+  electricity_meter_code String?   @db.VarChar
+  updated_at             DateTime? @db.Timestamp(6)
+  installation_date      DateTime? @default(now()) @db.Timestamp(6)
+  rooms                  rooms     @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model meter_readings {
+  meter_reading_id       Int            @id @default(autoincrement())
+  meter_record_id        Int?
+  room_id                Int?
+  water_prev             Int?
+  water_curr             Int?
+  electric_prev          Int?
+  electric_curr          Int?
+  water_unit_used        Int?
+  electric_unit_used     Int?
+  created_at             DateTime?      @default(now()) @db.Timestamp(6)
+  month                  DateTime?      @db.Date
+  water_rate             Decimal?       @db.Decimal(10, 2)
+  electricity_rate       Decimal?       @db.Decimal(10, 2)
+  water_total_cost       Decimal?       @default(0) @db.Decimal(10, 2)
+  electricity_total_cost Decimal?       @default(0) @db.Decimal(10, 2)
+  total_cost             Decimal?       @default(0) @db.Decimal(10, 2)
+  meter_records          meter_records? @relation(fields: [meter_record_id], references: [meter_record_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_meter_record")
+  rooms                  rooms?         @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([electricity_total_cost], map: "idx_meter_readings_electricity_cost")
+  @@index([total_cost], map: "idx_meter_readings_total_cost")
+  @@index([water_total_cost], map: "idx_meter_readings_water_cost")
+}
+
+model meter_records {
+  meter_record_id   Int                @id @default(autoincrement())
+  meter_record_date DateTime           @db.Date
+  created_at        DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?          @default(now()) @db.Timestamp(6)
+  dorm_id           Int                @default(1)
+  meter_readings    meter_readings[]
+  dormitories       dormitories        @relation(fields: [dorm_id], references: [dorm_id], onDelete: Cascade, map: "fk_meter_records_dorm")
+  monthly_invoices  monthly_invoices[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model meter_water {
+  room_id           Int       @id
+  water_meter_code  String?   @db.VarChar
+  updated_at        DateTime? @db.Timestamp(6)
+  installation_date DateTime? @default(now()) @db.Timestamp(6)
+  rooms             rooms     @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model monthly_invoices {
+  monthly_invoice_id Int                @id @default(autoincrement())
+  meter_record_id    Int?
+  dorm_id            Int?
+  issue_date         DateTime           @default(dbgenerated("CURRENT_DATE")) @db.Date
+  due_date           DateTime           @db.Date
+  month              DateTime           @db.Date
+  charge_per_day     Decimal?           @default(50.00) @db.Decimal(10, 2)
+  updated_at         DateTime?          @default(now()) @db.Timestamp(6)
+  created_at         DateTime?          @default(now()) @db.Timestamp(6)
+  invoice_receipts   invoice_receipts[]
+  dormitories        dormitories?       @relation(fields: [dorm_id], references: [dorm_id], onDelete: Cascade, onUpdate: NoAction)
+  meter_records      meter_records?     @relation(fields: [meter_record_id], references: [meter_record_id], onUpdate: NoAction)
+}
+
+model monthly_service {
+  monthly_service_id Int       @id(map: "contract_services_pkey") @default(autoincrement())
+  contract_id        Int
+  service_name       String    @db.VarChar(255)
+  service_price      Decimal   @default(0.00) @db.Decimal(10, 2)
+  quantity           Int       @default(1)
+  is_active          Boolean   @default(true)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  updated_at         DateTime? @default(now()) @db.Timestamp(6)
+  contracts          contracts @relation(fields: [contract_id], references: [contract_id], onDelete: Cascade, onUpdate: NoAction, map: "contract_services_contract_id_fkey")
+
+  @@index([is_active], map: "idx_contract_services_active")
+  @@index([contract_id], map: "idx_contract_services_contract_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model move_in_receipt_items {
+  move_in_receipt_item_id Int               @id(map: "receipt_items_pkey") @default(autoincrement())
+  move_in_receipt_id      Int?
+  item_type               String            @db.VarChar(50)
+  description             String
+  quantity                Int?              @default(1)
+  unit_price              Decimal?          @default(0) @db.Decimal(10, 2)
+  total_price             Decimal           @db.Decimal(10, 2)
+  created_at              DateTime?         @default(now()) @db.Timestamp(6)
+  move_in_receipts        move_in_receipts? @relation(fields: [move_in_receipt_id], references: [move_in_receipt_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([move_in_receipt_id], map: "idx_receipt_items_receipt_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model move_in_receipts {
+  move_in_receipt_id    Int                     @id(map: "receipts_pkey") @default(autoincrement())
+  contract_id           Int?
+  receipt_number        String                  @unique(map: "receipts_receipt_number_key") @db.VarChar(50)
+  total_amount          Decimal                 @db.Decimal(10, 2)
+  payment_method        String?                 @default("cash") @db.VarChar(50)
+  receipt_date          DateTime                @db.Date
+  receipt_note          String?
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamp(6)
+  move_in_receipt_items move_in_receipt_items[]
+  contracts             contracts?              @relation(fields: [contract_id], references: [contract_id], onUpdate: NoAction)
+
+  @@index([contract_id], map: "idx_receipts_contract_id")
+  @@index([receipt_date], map: "idx_receipts_receipt_date")
+  @@index([receipt_number], map: "idx_receipts_receipt_number")
+}
+
+model move_out_receipt_items {
+  move_out_receipt_item_id Int               @id @default(autoincrement())
+  move_out_receipt_id      Int
+  item_type                String            @db.VarChar(50)
+  description              String
+  quantity                 Int?              @default(1)
+  unit_price               Decimal           @db.Decimal(10, 2)
+  total_price              Decimal           @db.Decimal(10, 2)
+  created_at               DateTime?         @default(now()) @db.Timestamp(6)
+  move_out_receipts        move_out_receipts @relation(fields: [move_out_receipt_id], references: [move_out_receipt_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([item_type], map: "idx_move_out_receipt_items_item_type")
+  @@index([move_out_receipt_id], map: "idx_move_out_receipt_items_receipt_id")
+}
+
+model move_out_receipts {
+  move_out_receipt_id    Int                      @id @default(autoincrement())
+  contract_id            Int?
+  receipt_number         String                   @unique @db.VarChar(50)
+  net_amount             Decimal                  @db.Decimal(10, 2)
+  payment_method         String?                  @default("เงินสด") @db.VarChar(50)
+  receipt_date           DateTime                 @default(dbgenerated("CURRENT_DATE")) @db.Date
+  move_out_date          DateTime?                @db.Date
+  receipt_note           String?
+  created_at             DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?                @default(now()) @db.Timestamp(6)
+  move_out_receipt_items move_out_receipt_items[]
+  contracts              contracts?               @relation(fields: [contract_id], references: [contract_id], onUpdate: NoAction)
+
+  @@index([contract_id], map: "idx_move_out_receipts_contract_id")
+  @@index([move_out_date], map: "idx_move_out_receipts_move_out_date")
+  @@index([receipt_date], map: "idx_move_out_receipts_receipt_date")
+  @@index([receipt_number], map: "idx_move_out_receipts_receipt_number")
+}
+
+model payments {
+  payment_id         Int              @id @default(autoincrement())
+  invoice_receipt_id Int
+  payment_method     String           @default("เงินสด") @db.VarChar(50)
+  payment_amount     Decimal          @db.Decimal(10, 2)
+  payment_date       DateTime         @db.Date
+  payment_note       String?
+  receipt_number     String           @unique @db.VarChar(100)
+  created_at         DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
+  invoice_receipts   invoice_receipts @relation(fields: [invoice_receipt_id], references: [invoice_receipt_id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([invoice_receipt_id], map: "idx_payments_invoice_id")
+  @@index([payment_date], map: "idx_payments_payment_date")
+  @@index([receipt_number], map: "idx_payments_receipt_number")
+}
+
+model room_type_images {
+  room_type_image_id Int        @id @default(autoincrement())
+  room_type_id       Int
+  image_url          String     @db.VarChar(500)
+  created_at         DateTime?  @default(now()) @db.Timestamp(6)
+  room_types         room_types @relation(fields: [room_type_id], references: [room_type_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model room_types {
+  room_type_id     Int                @id @default(autoincrement())
+  dorm_id          Int
+  room_type_name   String             @db.VarChar(255)
+  monthly_rent     Decimal            @default(0) @db.Decimal(10, 2)
+  security_deposit Decimal            @default(0) @db.Decimal(10, 2)
+  prepaid_amount   Decimal            @default(0) @db.Decimal(10, 2)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
+  amenities        Json?
+  contracts        contracts[]
+  room_type_images room_type_images[]
+  dormitories      dormitories        @relation(fields: [dorm_id], references: [dorm_id], onDelete: Cascade, onUpdate: NoAction)
+  rooms            rooms[]
+}
+
+model rooms {
+  room_id           Int                @id @default(autoincrement())
+  dorm_id           Int
+  room_type_id      Int?
+  floor_number      Int
+  room_number       String             @db.VarChar(10)
+  status_id         Int?               @default(1)
+  available         Boolean?           @default(true)
+  created_at        DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?          @default(now()) @db.Timestamp(6)
+  contracts         contracts[]
+  invoice_receipts  invoice_receipts[]
+  meter_electricity meter_electricity?
+  meter_readings    meter_readings[]
+  meter_water       meter_water?
+  dormitories       dormitories        @relation(fields: [dorm_id], references: [dorm_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rooms_dorm")
+  room_types        room_types?        @relation(fields: [room_type_id], references: [room_type_id], onDelete: NoAction, onUpdate: NoAction)
+  tenants           tenants[]
+
+  @@unique([dorm_id, room_number])
+  @@index([dorm_id], map: "idx_rooms_dorm_id")
+  @@index([room_type_id], map: "idx_rooms_room_type_id")
+}
+
+model tenant_emergency_contacts {
+  emergency_contacts_id Int       @id @default(autoincrement())
+  tenant_id             Int
+  first_name            String    @db.VarChar(100)
+  last_name             String?   @db.VarChar(100)
+  phone_number          String    @db.VarChar(20)
+  relationship          String?   @db.VarChar(50)
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  tenants               tenants   @relation(fields: [tenant_id], references: [tenant_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model tenant_vehicles {
+  tenant_vehicle_id Int       @id @default(autoincrement())
+  tenant_id         Int
+  license_plate     String    @db.VarChar(50)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  vehicle_type      String?   @db.VarChar(20)
+  tenants           tenants   @relation(fields: [tenant_id], references: [tenant_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tenants {
+  tenant_id                 Int                         @id @default(autoincrement())
+  room_id                   Int?
+  first_name                String                      @db.VarChar(100)
+  last_name                 String?                     @db.VarChar(100)
+  phone_number              String                      @db.VarChar(20)
+  email                     String?                     @db.VarChar(255)
+  id_card_number            String?                     @db.VarChar(20)
+  address                   String?
+  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  note                      String?
+  province                  String?                     @db.VarChar(100)
+  district                  String?                     @db.VarChar(100)
+  subdistrict               String?                     @db.VarChar(100)
+  contracts                 contracts[]
+  invoice_receipts          invoice_receipts[]
+  tenant_emergency_contacts tenant_emergency_contacts[]
+  tenant_vehicles           tenant_vehicles[]
+  rooms                     rooms?                      @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([district], map: "idx_tenants_district")
+  @@index([province], map: "idx_tenants_province")
+  @@index([room_id], map: "idx_tenants_room_id")
+  @@index([subdistrict], map: "idx_tenants_subdistrict")
+}
+
+model users {
+  user_id       Int           @id @default(autoincrement())
+  username      String        @unique @db.VarChar(50)
+  email         String        @unique @db.VarChar(100)
+  password_hash String        @db.VarChar(255)
+  created_at    DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?     @default(now()) @db.Timestamp(6)
+  phone         String?       @db.VarChar(20)
+  dormitories   dormitories[]
+}
+
+model utility_rates {
+  utility_rate_id  Int                @id @default(autoincrement())
+  dorm_id          Int?
+  water_rate       Decimal            @default(0) @db.Decimal(10, 2)
+  electricity_rate Decimal            @default(0) @db.Decimal(10, 2)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
+  start_date       DateTime           @db.Date
+  invoice_receipts invoice_receipts[]
+}
+
+enum meter_source {
+  manual
+  digital
+}
+
+enum meter_type {
+  water
+  electricity
+}

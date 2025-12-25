@@ -1,110 +1,102 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import axios from "axios";
-import API_URL from "../../../utils/api";
-import FooterSidebar from "../common/FooterSidebar";
+import FooterSidebar from "../../components/common/FooterSidebar";
 
 // Icons
-import { RxDashboard } from "react-icons/rx";
-import { HiOutlineBuildingOffice2, HiOutlineUsers, HiOutlineBanknotes } from "react-icons/hi2";
-import { GoPeople } from "react-icons/go";
-import { FiChevronDown, FiChevronRight } from "react-icons/fi";
+import {
+  FaChevronDown,
+  FaChevronRight,
+  FaEye,
+  FaReceipt,
+  FaUsers,
+} from "react-icons/fa";
+import { IoCalendar, IoNewspaper, IoSpeedometer, IoFileTrayFullSharp } from "react-icons/io5";
+import { MdSaveAs, MdGasMeter } from "react-icons/md";
+import { TbLayoutDashboardFilled } from "react-icons/tb";
+import { FaFileInvoiceDollar, FaPersonWalkingLuggage } from "react-icons/fa6";
+import { PiBuildingApartmentFill } from "react-icons/pi";
+import { IoMdSettings } from "react-icons/io";
+import { HiNewspaper } from "react-icons/hi2";
+import { HiDocumentReport } from "react-icons/hi";
+import { BsPersonFillX, BsPersonFillExclamation } from "react-icons/bs";
+import { RiWaterFlashFill } from "react-icons/ri";
 
-const SidebarMain = () => {
+function DormSidebar() {
   const location = useLocation();
   const pathname = location.pathname;
   const { dormId } = useParams();
-  
-  const [currentUser, setCurrentUser] = useState({
-    name: "Loading...",
-    role: "ADMIN"
-  });
 
+  // ใช้ state แบบ object เพื่อจัดการการเปิดปิด submenu (เหมือน SidebarMain)
   const [openSubMenu, setOpenSubMenu] = useState({});
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const id = payload.id || payload.userId;
-        
-        const res = await axios.get(`${API_URL}/api/userall/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        setCurrentUser({
-          name: res.data.username,
-          role: payload.role || res.data.role || "ADMIN"
-        });
-      } catch (error) {
-        setCurrentUser({
-          name: "ไม่พบชื่อผู้ใช้",
-          role: "ADMIN"
-        });
-      }
-    };
-    
-    fetchUserData();
-  }, []);
+  // Mock currentUser (ตามโค้ดเดิม)
+  const currentUser = {
+    name: "Admin",
+    role: "ADMIN"
+  };
 
+  // กำหนดเมนู
   const menuItems = [
-    {
-      title: "แดชบอร์ด",
-      path: `/admin/${dormId}`,
-      icon: <RxDashboard size={20} />,
-      exact: true, 
+    { 
+      label: "Dashboard", 
+      path: `/dashboard/${dormId}`, 
+      icon: <TbLayoutDashboardFilled size={20}/>,
+      exact: true 
+    },
+    { 
+      label: "ห้องพัก", 
+      path: `/rooms-plan/${dormId}`, 
+      icon: <PiBuildingApartmentFill size={20}/> 
     },
     {
-      title: "จัดการผู้เช่า", 
-      icon: <HiOutlineUsers size={20} />, 
+      label: "การย้ายออก",
+      icon: <FaPersonWalkingLuggage size={20}/>,
       submenu: [
-        { title: "รายชื่อผู้เช่า", path: `/admin/${dormId}/tenantlist` },
-        // { title: "รอย้ายออก", path: `/admin/${dormId}/wait-checkout` },
+        { label: "รอย้ายออก", path: `/moveout/${dormId}`, icon: <BsPersonFillExclamation size={16}/> },
+        { label: "ย้ายออกแล้ว", path: `/moveout/completed/${dormId}`, icon: <BsPersonFillX size={16}/> },
       ]
     },
     {
-      title: "มิเตอร์", 
-      icon: <HiOutlineBanknotes size={20} />, 
+      label: "มิเตอร์",
+      icon: <IoSpeedometer size={20}/>,
       submenu: [
-        { title: "รายการจดมิเตอร์", path: `/admin/${dormId}/meter-record` },
-
+        { label: "รายการจดมิเตอร์", path: `/meter-reading/${dormId}`, icon: <MdSaveAs size={16}/> },
+        { label: "ดูมิเตอร์ (Real-time)", path: `/real-time-meter/${dormId}`, icon: <FaEye size={16}/> },
+        { label: "เพิ่มมิเตอร์ดิจิตอล", path: `/add-meter-digital/${dormId}`, icon: <MdGasMeter size={16}/> },
       ]
     },
     {
-      title: "จัดการบิล",
-      icon: <GoPeople size={20} />, 
+      label: "บิลรายเดือน",
+      icon: <IoNewspaper size={20}/>,
       submenu: [
-        { title: "รายการบิลรายเดือน", path: `/admin/${dormId}/invoices` },
+        { label: "ออกบิลรายเดือน", path: `/bills/${dormId}`, icon: <IoCalendar size={16}/> },
+        { label: "บิลค้างชำระ", path: `/bills/pending/${dormId}`, icon: <FaFileInvoiceDollar size={16}/> },
+        { label: "บิลทั้งหมด", path: `/bills/all/${dormId}`, icon: <IoFileTrayFullSharp size={16}/> },
       ]
     },
-    // {
-    //   title: "จัดการพนักงาน",
-    //   icon: <GoPeople size={20} />, 
-    //   submenu: [
-    //     { title: "รายชื่อพนักงาน", path: `/admin/${dormId}/staff` },
-    //     { title: "สิทธิ์การใช้งาน", path: `/admin/${dormId}/permissions` },
-    //   ]
-    // },
     {
-      title: "ตั้งค่าหอพัก",
-      icon: <HiOutlineBuildingOffice2 size={20} />,
+      label: "สรุปรายงาน",
+      icon: <HiDocumentReport size={20}/>,
       submenu: [
-        { title: "ข้อมูลหอพัก", path: `/admin/${dormId}/dorminfo` },
-        { title: "ประเภทห้องพัก", path: `/admin/${dormId}/roomtype` },
-        { title: "ชั้นและห้องพัก", path: `/admin/${dormId}/floor-rooms` },
-        { title: "ตั้งค่ามิเตอร์ (ราคา)", path: `/admin/${dormId}/meter-settings` },
+        { label: "ใบเสร็จรับเงิน", path: `/reports/receipts/${dormId}`, icon: <FaReceipt size={16}/> },
+        { label: "ใบแจ้งหนี้รายเดือน", path: `/reports/monthly-bills/${dormId}`, icon: <HiNewspaper size={16}/> },
+        { label: "รายงานผู้เช่า", path: `/reports/tenant/${dormId}`, icon: <FaUsers size={16}/> },
+        { label: "รายงานค่าน้ำค่าไฟ", path: `/reports/utility-summary/${dormId}`, icon: <RiWaterFlashFill size={16}/> },
       ]
+    },
+    { 
+      label: "ตั้งค่าหอพัก", 
+      path: `/dorm-settings/${dormId}`, 
+      icon: <IoMdSettings size={20}/> 
     },
   ];
 
-  // ฟังก์ชันเช็คว่า Active หรือไม่
+  // ฟังก์ชันเช็คว่า Active หรือไม่ (ถอดแบบจาก SidebarMain)
   const isActiveLink = (path, exact = false) => {
-    // ลบ Trailing Slash ออกก่อนเช็ค เพื่อความแม่นยำ (เช่น /admin/1/ -> /admin/1)
     const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
-    const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+    const cleanPath = path?.endsWith('/') ? path.slice(0, -1) : path;
+
+    if (!cleanPath) return false;
 
     if (exact) {
         return cleanPathname === cleanPath;
@@ -120,7 +112,7 @@ const SidebarMain = () => {
     });
   };
 
-  // Auto Expand เมนูตาม URL
+  // Auto Expand เมนูตาม URL เมื่อโหลดหน้าเว็บ
   useEffect(() => {
     let newOpenState = {};
     menuItems.forEach((item, index) => {
@@ -138,10 +130,12 @@ const SidebarMain = () => {
     <div className="bg-gray-800 w-64 text-gray-100 flex flex-col h-screen justify-between overflow-y-auto scrollbar-hide bg-gradient-to-b from-gray-800 to-gray-900">
       
       <div>
+        {/* Header */}
         <div className="h-16 bg-gray-900/50 backdrop-blur-sm text-yellow-400 flex items-center justify-center text-2xl font-bold sticky top-0 z-10 border-b border-gray-700/50">
-          DormManage
+          SmartDorm
         </div>
 
+        {/* Menu Items */}
         <nav className="flex flex-col gap-2 px-3 mt-6 pb-4">
           {menuItems.map((item, index) => {
             const isParentActive = openSubMenu[index];
@@ -150,6 +144,7 @@ const SidebarMain = () => {
             <div key={index}>
               {item.submenu ? (
                 <>
+                  {/* ปุ่มเมนูหลักที่มีลูก (Dropdown Head) */}
                   <button
                     onClick={() => toggleSubMenu(index)}
                     className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-200 group
@@ -162,14 +157,15 @@ const SidebarMain = () => {
                       <span className={`transition-colors ${isParentActive ? 'text-gray-900' : 'text-gray-400 group-hover:text-yellow-400'}`}>
                         {item.icon}
                       </span>
-                      <span className="font-medium">{item.title}</span>
+                      <span className="font-medium">{item.label}</span>
                     </div>
                     {openSubMenu[index] 
-                      ? <FiChevronDown className={isParentActive ? "text-gray-900" : "text-yellow-400"} /> 
-                      : <FiChevronRight className={isParentActive ? "text-gray-800" : "text-gray-500 group-hover:text-gray-300"} />
+                      ? <FaChevronDown className={isParentActive ? "text-gray-900" : "text-yellow-400"} /> 
+                      : <FaChevronRight className={isParentActive ? "text-gray-800" : "text-gray-500 group-hover:text-gray-300"} />
                     }
                   </button>
 
+                  {/* พื้นที่แสดงเมนูย่อย (Submenu Body) */}
                   <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openSubMenu[index] ? "max-h-96 opacity-100 mt-2 mb-2" : "max-h-0 opacity-0"}`}>
                     <div className="flex flex-col gap-1 pl-6 ml-2 space-y-0.5">
                       {item.submenu.map((subItem, subIndex) => {
@@ -189,16 +185,19 @@ const SidebarMain = () => {
                              ${active ? 'shadow-[0_0_6px_rgba(234,179,8,0.8)] scale-110' : 'opacity-70 group-hover:opacity-100'}
                           `}></span>
                           
-                          <span>{subItem.title}</span>
+                          {/* แสดงไอคอนเล็กใน submenu (ถ้าต้องการ) ถ้าไม่ต้องการให้ลบ subItem.icon ออก */}
+                          {/* {subItem.icon && <span className={active ? "text-yellow-400" : "text-gray-500"}>{subItem.icon}</span>} */}
+                          
+                          <span>{subItem.label}</span>
                         </Link>
                       )})}
                     </div>
                   </div>
                 </>
               ) : (
+                /* ปุ่มเมนูปกติ (Single Link) */
                 <Link
                   to={item.path}
-                  // [แก้ไขสำคัญ] Dashboard จะเหลืองก็ต่อเมื่อ Active และต้อง "ไม่มีเมนูย่อยเปิดอยู่" (!isAnySubmenuOpen)
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group
                     ${isActiveLink(item.path, item.exact) && !isAnySubmenuOpen
                       ? "bg-yellow-500 text-gray-900 shadow-md font-bold" 
@@ -209,7 +208,7 @@ const SidebarMain = () => {
                   <span className={`${isActiveLink(item.path, item.exact) && !isAnySubmenuOpen ? 'text-gray-900' : 'text-gray-400 group-hover:text-yellow-400'}`}>
                     {item.icon}
                   </span>
-                  <span className="font-medium">{item.title}</span>
+                  <span className="font-medium">{item.label}</span>
                 </Link>
               )}
             </div>
@@ -220,6 +219,6 @@ const SidebarMain = () => {
       <FooterSidebar currentUser={currentUser} />
     </div>
   );
-};
+}
 
-export default SidebarMain;
+export default DormSidebar;

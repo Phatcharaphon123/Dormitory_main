@@ -1,4 +1,3 @@
-
 const {fetchSensorDormitoryLatest, fetchSensorDormitory} = require('../influxdb/query'); //คอนฟิกการเชื่อมต่อ influxdb
 exports.DormitoryLatest = async (req, res) => { 
     try {

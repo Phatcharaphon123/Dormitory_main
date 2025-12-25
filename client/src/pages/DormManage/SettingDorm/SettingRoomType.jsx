@@ -6,6 +6,7 @@ import { IoIosArrowBack,IoIosArrowForward } from "react-icons/io";
 import { PiSealWarningFill } from "react-icons/pi";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../config/api';
 
 function SettingRoomType() {
   const { dormId } = useParams();
@@ -40,7 +41,7 @@ function SettingRoomType() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3001/api/room-types/dormitories/${dormId}`, {
+      const response = await axios.get(`${API_URL}/api/room-types/dormitories/${dormId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -173,7 +174,7 @@ function SettingRoomType() {
 
         const token = localStorage.getItem('token');
         const response = await axios.post(
-          `http://localhost:3001/api/room-types/dormitories/${dormId}`,
+          `${API_URL}/api/room-types/dormitories/${dormId}`,
           formDataToSend,
           {
             headers: {
@@ -205,7 +206,7 @@ function SettingRoomType() {
         const roomTypeId = roomTypes[selectedRoomIndex].room_type_id;
         const token = localStorage.getItem('token');
         const response = await axios.put(
-          `http://localhost:3001/api/room-types/dormitories/${dormId}/${roomTypeId}`,
+          `${API_URL}/api/room-types/dormitories/${dormId}/${roomTypeId}`,
           formDataToSend,
           {
             headers: {
@@ -255,7 +256,7 @@ function SettingRoomType() {
     try {
       const roomTypeId = roomTypes[roomToDelete].room_type_id;
       const token = localStorage.getItem('token');
-      const response = await axios.delete(`http://localhost:3001/api/room-types/dormitories/${dormId}/${roomTypeId}`, {
+      const response = await axios.delete(`${API_URL}/api/room-types/dormitories/${dormId}/${roomTypeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -500,7 +501,7 @@ function SettingRoomType() {
                     {formData.existingImages.map((imageUrl, index) => (
                       <div key={`existing-${index}`} className="relative">
                         <img
-                          src={`http://localhost:3001/uploads/${imageUrl}`}
+                          src={`${API_URL}/uploads/${imageUrl}`}
                           alt={`existing ${index}`}
                           className="w-full h-30 object-cover rounded-md border"
                         />
@@ -584,7 +585,7 @@ function SettingRoomType() {
                 {roomImages && roomImages.length > 0 ? (
                   <>
                     <img
-                      src={`http://localhost:3001/uploads/${roomImages[currentImg]?.image_url || roomImages[currentImg]}`}
+                      src={`${API_URL}/uploads/${roomImages[currentImg]?.image_url || roomImages[currentImg]}`}
                       alt="room"
                       className="object-cover w-full h-full"
                     />

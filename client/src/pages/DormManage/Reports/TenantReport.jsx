@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import Pagination from "../../../components/Pagination";
+import Pagination from "../../../components/common/Pagination";
 import { FaUsers } from "react-icons/fa";
-import ExcelExportButton from "../../../components/ExcelExportButton";
+import ExcelExportButton from "../../../components/common/ExcelExportButton";
 import axios from 'axios';
 import API_URL from "../../../config/api";
 

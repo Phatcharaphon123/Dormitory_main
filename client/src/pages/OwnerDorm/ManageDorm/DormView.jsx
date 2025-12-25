@@ -4,8 +4,9 @@ import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import API_URL from "../../../config/api";
 
-function YouDorm() {
+function DormView() {
 
 const navigate = useNavigate();
 const [dormList, setDormList] = useState([]);
@@ -13,7 +14,7 @@ useEffect(() => {
   const fetchDorms = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get("http://localhost:3001/api/dormitories/with-stats", {
+      const res = await axios.get(`${API_URL}/api/dormitories/with-stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -33,7 +34,7 @@ useEffect(() => {
       {/* ปุ่มเพิ่มหอพัก */}
       <div className="flex justify-between items-center mb-6">
         <button
-          onClick={() => navigate("/add-dorm")}
+          onClick={() => navigate("/ownerdorm/add-dorm")}
           className="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 text-white font-medium px-5 py-2 rounded-md shadow text-[1rem]"
         >
           <FaPlus size={18} />
@@ -75,7 +76,7 @@ useEffect(() => {
                 <div className="w-40 h-32 bg-gray-100 border border-gray-300 flex items-center justify-center rounded-md overflow-hidden flex-shrink-0">
                   {dorm.image_filename ? (
                     <img
-                      src={`http://localhost:3001/uploads/${dorm.image_filename}`}
+                      src={`${API_URL}/uploads/${dorm.image_filename}`}
                       alt={dorm.name}
                       className="w-full h-full object-cover"
                     />
@@ -124,4 +125,4 @@ useEffect(() => {
   );
 }
 
-export default YouDorm;
+export default DormView;

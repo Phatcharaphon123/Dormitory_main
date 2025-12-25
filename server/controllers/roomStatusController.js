@@ -1,4 +1,4 @@
-const pool = require('../db');
+const prisma = require('../config/prisma');
 
 /**
  * อัปเดตสถานะห้องให้เป็นว่าง เมื่อไม่มีสัญญาที่ active
@@ -7,38 +7,55 @@ exports.updateRoomAvailability = async (req, res) => {
   try {
     // อัปเดตสถานะห้องทั้งหมดในหอพักให้ตรงกับสถานะสัญญา
     const { dormId } = req.params;
+    const dormIdInt = parseInt(dormId);
     
-    const updateQuery = `
-      UPDATE rooms 
-      SET available = CASE 
-        WHEN EXISTS (
-          SELECT 1 FROM contracts c 
-          WHERE c.room_id = rooms.room_id 
-          AND c.status = 'active'
-        ) THEN false
-        ELSE true
-      END,
-      updated_at = CURRENT_TIMESTAMP
-      WHERE dorm_id = $1
-      RETURNING room_id, room_number, available
-    `;
+    // ดึงข้อมูลห้องและสัญญาของหอพักนี้
+    const rooms = await prisma.rooms.findMany({
+      where: {
+        dorm_id: dormIdInt
+      },
+      include: {
+        contracts: {
+          where: {
+            status: 'active'
+          }
+        }
+      }
+    });
+    
+    // อัปเดตสถานะแต่ละห้อง
+    const updatePromises = rooms.map(room => {
+      const hasActiveContract = room.contracts.length > 0;
+      return prisma.rooms.update({
+        where: {
+          room_id: room.room_id
+        },
+        data: {
+          available: !hasActiveContract,
+          updated_at: new Date()
+        },
+        select: {
+          room_id: true,
+          room_number: true,
+          available: true
+        }
+      });
+    });
+    
+    const updatedRooms = await Promise.all(updatePromises);
 
-    const result = await pool.query(updateQuery, [dormId]);
-    
-    console.log(`✅ อัปเดตสถานะห้อง ${result.rows.length} ห้อง`);
-    
     // นับจำนวนห้องที่เปลี่ยนสถานะ
-    const availableRooms = result.rows.filter(room => room.available).length;
-    const unavailableRooms = result.rows.filter(room => !room.available).length;
+    const availableRooms = updatedRooms.filter(room => room.available).length;
+    const unavailableRooms = updatedRooms.filter(room => !room.available).length;
     
     res.json({
       success: true,
       message: 'อัปเดตสถานะห้องสำเร็จ',
       data: {
-        totalUpdated: result.rows.length,
+        totalUpdated: updatedRooms.length,
         availableRooms: availableRooms,
         unavailableRooms: unavailableRooms,
-        updatedRooms: result.rows
+        updatedRooms: updatedRooms
       }
     });
 
@@ -58,37 +75,47 @@ exports.updateRoomAvailability = async (req, res) => {
 exports.fixRoomStatus = async (req, res) => {
   try {
     const { dormId, roomNumber } = req.params;
+    const dormIdInt = parseInt(dormId);
     
     // ตรวจสอบสัญญาที่ active ของห้องนี้
-    const checkContractQuery = `
-      SELECT c.contract_id, c.status 
-      FROM contracts c
-      JOIN rooms r ON c.room_id = r.room_id  
-      WHERE r.dorm_id = $1 AND r.room_number = $2 AND c.status = 'active'
-    `;
+    const room = await prisma.rooms.findFirst({
+      where: {
+        dorm_id: dormIdInt,
+        room_number: roomNumber
+      },
+      include: {
+        contracts: {
+          where: {
+            status: 'active'
+          }
+        }
+      }
+    });
     
-    const contractResult = await pool.query(checkContractQuery, [dormId, roomNumber]);
-    const hasActiveContract = contractResult.rows.length > 0;
-    
-    // อัปเดตสถานะห้อง
-    const updateRoomQuery = `
-      UPDATE rooms 
-      SET available = $3,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE dorm_id = $1 AND room_number = $2
-      RETURNING room_id, room_number, available
-    `;
-    
-    const roomResult = await pool.query(updateRoomQuery, [dormId, roomNumber, !hasActiveContract]);
-    
-    if (roomResult.rows.length === 0) {
+    if (!room) {
       return res.status(404).json({
         success: false,
         message: 'ไม่พบห้องที่ระบุ'
       });
     }
     
-    console.log(`✅ อัปเดตสถานะห้อง ${roomNumber}: available = ${!hasActiveContract}`);
+    const hasActiveContract = room.contracts.length > 0;
+    
+    // อัปเดตสถานะห้อง
+    const updatedRoom = await prisma.rooms.update({
+      where: {
+        room_id: room.room_id
+      },
+      data: {
+        available: !hasActiveContract,
+        updated_at: new Date()
+      },
+      select: {
+        room_id: true,
+        room_number: true,
+        available: true
+      }
+    });
     
     res.json({
       success: true,
@@ -97,7 +124,7 @@ exports.fixRoomStatus = async (req, res) => {
         roomNumber: roomNumber,
         available: !hasActiveContract,
         hasActiveContract: hasActiveContract,
-        contractsFound: contractResult.rows.length
+        contractsFound: room.contracts.length
       }
     });
 

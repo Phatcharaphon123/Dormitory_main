@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../config/api';
 
 // Component สำหรับ Confirmation Popup
 function ConfirmationPopup({ isOpen, onClose, onConfirm, title, message, waterRate, electricRate }) {
@@ -60,7 +61,7 @@ function SettingUtility() {
     const fetchUtilityRates = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3001/api/utilities/dormitories/${dormId}/rates`, {
+        const response = await axios.get(`${API_URL}/api/utilities/dormitories/${dormId}/rates`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -120,7 +121,7 @@ function SettingUtility() {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `http://localhost:3001/api/utilities/dormitories/${dormId}/rates`,
+        `${API_URL}/api/utilities/dormitories/${dormId}/rates`,
         {
           water_rate: parseFloat(formData.waterValue),
           electricity_rate: parseFloat(formData.electricValue),

@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react'
 import { FaCalendarAlt, FaUser, FaHome, FaClock, FaEye, FaEdit, FaTrash, FaSearch, FaFilter, FaExclamationTriangle, FaCheckCircle, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
-import Pagination from '../../../components/Pagination';
-import ExcelExportButton from '../../../components/ExcelExportButton';
+import Pagination from '../../../components/common/Pagination';
+import ExcelExportButton from '../../../components/common/ExcelExportButton';
 import { FaBusinessTime } from "react-icons/fa6";
 import { BsPersonFillX,BsPersonFillExclamation } from "react-icons/bs";
 import API_URL from '../../../config/api';

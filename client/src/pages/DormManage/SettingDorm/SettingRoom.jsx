@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from '../../../config/api';
 
 function EditRoom({ onClose, roomTypeData, dormId, selectedRooms, onSaveSuccess }) {
   const [selectedType, setSelectedType] = useState('');
@@ -37,7 +38,7 @@ function EditRoom({ onClose, roomTypeData, dormId, selectedRooms, onSaveSuccess 
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `http://localhost:3001/api/rooms/dormitories/${dormId}/selected`,
+        `${API_URL}/api/rooms/dormitories/${dormId}/selected`,
         payload,
         {
           headers: { 
@@ -100,9 +101,8 @@ function SettingRoom() {
     }
     
     const token = localStorage.getItem('token');
-    console.log('🔑 Making API call with dormId:', dormId);
     
-    axios.get(`http://localhost:3001/api/room-types/dormitories/${dormId}`, {
+    axios.get(`${API_URL}/api/room-types/dormitories/${dormId}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -123,8 +123,7 @@ function SettingRoom() {
       return;
     }
     
-    const url = `http://localhost:3001/api/rooms/dormitories/${dormId}/by-floor`;
-    console.log('🔄 Loading rooms from URL:', url);
+    const url = `${API_URL}/api/rooms/dormitories/${dormId}/by-floor`;
     
     try {
       const token = localStorage.getItem('token');
@@ -133,9 +132,6 @@ function SettingRoom() {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      console.log('✅ Rooms data loaded:', response.data);
-
       const formatted = response.data.map((floor) => ({
         floorNumber: floor.floorNumber,
         roomCount: floor.rooms.length,
@@ -150,11 +146,6 @@ function SettingRoom() {
       setFloorData(formatted);
     } catch (err) {
       console.error('❌ โหลดข้อมูลห้องล้มเหลว:', err);
-      console.error('❌ Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        url: url
-      });
       toast.error('ไม่สามารถโหลดข้อมูลห้องได้');
     }
   };
@@ -241,7 +232,7 @@ function SettingRoom() {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `http://localhost:3001/api/rooms/dormitories/${dormId}`,
+        `${API_URL}/api/rooms/dormitories/${dormId}`,
         payload,
         {
           headers: { 

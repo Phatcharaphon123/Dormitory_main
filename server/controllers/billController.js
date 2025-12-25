@@ -1,4 +1,4 @@
-const pool = require("../db");
+const  prisma  = require("../config/prisma");
 const emailService = require("../services/emailService");
 
 // ดึงรอบจดมิเตอร์ทั้งหมดของหอพัก
@@ -8,27 +8,35 @@ exports.getMeterRecordsByDorm = async (req, res) => {
 
   try {
     // ตรวจสอบว่าหอพักเป็นของ user ที่ login
-    const ownershipCheck = await pool.query(
-      "SELECT dorm_id FROM dormitories WHERE dorm_id = $1 AND user_id = $2",
-      [dormId, user_id]
-    );
+    const ownershipCheck = await prisma.dormitories.findFirst({
+      where: {
+        dorm_id: parseInt(dormId),
+        user_id: user_id
+      },
+      select: { dorm_id: true }
+    });
 
-    if (ownershipCheck.rows.length === 0) {
+    if (!ownershipCheck) {
       return res
         .status(403)
         .json({ error: "Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้" });
     }
 
-    const result = await pool.query(
-      `SELECT meter_record_id, meter_record_date
-       FROM meter_records
-       WHERE dorm_id = $1
-       ORDER BY meter_record_date DESC`,
-      [dormId]
-    );
+    const records = await prisma.meter_records.findMany({
+      where: {
+        dorm_id: parseInt(dormId)
+      },
+      select: {
+        meter_record_id: true,
+        meter_record_date: true
+      },
+      orderBy: {
+        meter_record_date: 'desc'
+      }
+    });
 
     // แปลงวันที่เป็น YYYY-MM-DD ตามเวลาไทย
-    const formatted = result.rows.map((row) => ({
+    const formatted = records.map((row) => ({
       meter_record_id: row.meter_record_id,
       meter_record_date: new Date(row.meter_record_date).toLocaleDateString(
         "sv-SE",
@@ -52,84 +60,131 @@ exports.getRoomsByMeterRecordId = async (req, res) => {
 
   try {
     // ตรวจสอบว่าหอพักเป็นของ user ที่ login
-    const ownershipCheck = await pool.query(
-      "SELECT dorm_id FROM dormitories WHERE dorm_id = $1 AND user_id = $2",
-      [dormId, user_id]
-    );
+    const ownershipCheck = await prisma.dormitories.findFirst({
+      where: {
+        dorm_id: parseInt(dormId),
+        user_id: user_id
+      },
+      select: { dorm_id: true }
+    });
 
-    if (ownershipCheck.rows.length === 0) {
+    if (!ownershipCheck) {
       return res
         .status(403)
         .json({ error: "Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้" });
     }
 
-    const result = await pool.query(
-      `
-        WITH active_contracts_in_period AS (
-          SELECT DISTINCT ON (c.room_id) 
-            c.room_id, 
-            c.tenant_id, 
-            c.status as contract_status,
-            t.first_name,
-            t.last_name
-          FROM contracts c
-          JOIN tenants t ON c.tenant_id = t.tenant_id
-          JOIN meter_records mr ON mr.meter_record_id = $1
-          WHERE c.contract_start_date <= mr.meter_record_date
-            AND (c.contract_end_date IS NULL OR c.contract_end_date >= mr.meter_record_date)
-            AND c.status = 'active'
-          ORDER BY c.room_id, c.contract_start_date DESC
-        )
-        SELECT 
-          r.room_id,
-          r.room_number,
-          r.floor_number AS floor,
-          r.room_type_id,
-          COALESCE(ac.tenant_id) as tenant_id,
-          COALESCE(ac.first_name || ' ' || ac.last_name, 'ไม่มีผู้เช่า') AS tenant,
-          COALESCE(rt.monthly_rent, 0) AS room_rate,
-          COALESCE(mr.water_prev, 0) AS water_prev,
-          COALESCE(mr.water_curr, 0) AS water_curr,
-          COALESCE(mr.electric_prev, 0) AS electric_prev,
-          COALESCE(mr.electric_curr, 0) AS electric_curr,
-          -- ใช้หน่วยที่ใช้ที่เก็บไว้ในฐานข้อมูลแล้ว
-          COALESCE(mr.water_unit_used, 0) AS water_usage,
-          COALESCE(mr.electric_unit_used, 0) AS electric_usage,
-          COALESCE(mr.water_rate, 0) AS water_rate,
-          COALESCE(mr.electricity_rate, 0) AS electricity_rate,
-          -- คำนวณค่าน้ำและค่าไฟจากหน่วยที่เก็บไว้แล้ว
-          (COALESCE(mr.water_unit_used, 0) * COALESCE(mr.water_rate, 0)) AS water_charge,
-          (COALESCE(mr.electric_unit_used, 0) * COALESCE(mr.electricity_rate, 0)) AS electricity_charge,
-          -- คำนวณยอดรวมจากหน่วยที่เก็บไว้แล้ว
-          COALESCE(
-            inv.total,
-            COALESCE(rt.monthly_rent, 0) + 
-            (COALESCE(mr.water_unit_used, 0) * COALESCE(mr.water_rate, 0)) + 
-            (COALESCE(mr.electric_unit_used, 0) * COALESCE(mr.electricity_rate, 0))
-          ) AS total_amount,
-          CASE 
-            WHEN inv.invoice_receipt_id IS NOT NULL THEN true
-            ELSE false
-          END AS has_invoice,
-          COALESCE(ac.contract_status, 'no_contract') as contract_status,
-          mr.created_at as reading_date
-        FROM meter_readings mr
-        JOIN rooms r ON mr.room_id = r.room_id
-        LEFT JOIN room_types rt ON r.room_type_id = rt.room_type_id
-        LEFT JOIN active_contracts_in_period ac ON ac.room_id = r.room_id
-        LEFT JOIN (
-          SELECT ii.room_id, ii.invoice_receipt_id, ii.total
-          FROM invoice_receipts ii
-          JOIN monthly_invoices mi ON ii.monthly_invoice_id = mi.monthly_invoice_id
-          WHERE mi.meter_record_id = $1 AND ii.dorm_id = $2
-        ) inv ON inv.room_id = r.room_id
-        WHERE mr.meter_record_id = $1 AND r.dorm_id = $2
-        ORDER BY r.floor_number, r.room_number;
-      `,
-      [meterRecordId, dormId]
-    );
+    // ดึงข้อมูลการอ่านมิเตอร์พร้อมข้อมูลห้องและความสัมพันธ์
+    const meterReadings = await prisma.meter_readings.findMany({
+      where: {
+        meter_record_id: parseInt(meterRecordId),
+        rooms: {
+          dorm_id: parseInt(dormId)
+        }
+      },
+      include: {
+        rooms: {
+          include: {
+            room_types: true,
+            contracts: {
+              where: {
+                status: 'active'
+              },
+              include: {
+                tenants: true
+              },
+              orderBy: {
+                contract_start_date: 'desc'
+              },
+              take: 1
+            }
+          }
+        },
+        meter_records: true
+      },
+      orderBy: [
+        { rooms: { floor_number: 'asc' } },
+        { rooms: { room_number: 'asc' } }
+      ]
+    });
 
-    res.json(result.rows);
+    // ดึงข้อมูลใบแจ้งหนี้ที่เกี่ยวข้อง
+    const invoices = await prisma.invoice_receipts.findMany({
+      where: {
+        dorm_id: parseInt(dormId),
+        monthly_invoices: {
+          meter_record_id: parseInt(meterRecordId)
+        }
+      },
+      select: {
+        room_id: true,
+        invoice_receipt_id: true,
+        total: true
+      }
+    });
+
+    // สร้าง map สำหรับการค้นหาใบแจ้งหนี้อย่างรวดเร็ว
+    const invoiceMap = {};
+    invoices.forEach(inv => {
+      invoiceMap[inv.room_id] = inv;
+    });
+
+    // จัดรูปแบบข้อมูล
+    const formattedData = meterReadings.map(reading => {
+      const room = reading.rooms;
+      const roomType = room.room_types;
+      const contract = room.contracts[0]; // เอาสัญญาแรก (ล่าสุด)
+      const tenant = contract?.tenants;
+      const invoice = invoiceMap[room.room_id];
+
+      // คำนวณค่าใช้จ่าย
+      const roomRate = parseFloat(roomType?.monthly_rent) || 0;
+      const waterUsage = parseInt(reading.water_unit_used) || 0;
+      const waterRateValue = parseFloat(reading.water_rate) || 0;
+      const electricUsage = parseInt(reading.electric_unit_used) || 0; 
+      const electricRateValue = parseFloat(reading.electricity_rate) || 0;
+      
+      const waterCharge = waterUsage * waterRateValue;
+      const electricityCharge = electricUsage * electricRateValue;
+      const calculatedTotal = roomRate + waterCharge + electricityCharge;
+      
+      
+      // ใช้ calculatedTotal แทน invoice.total เสมอ
+      const totalAmount = calculatedTotal;
+
+      return {
+        roomId: room.room_id,
+        room_id: room.room_id,
+        room_number: room.room_number,
+        floor: room.floor_number,
+        room_type_id: room.room_type_id,
+        tenantId: contract?.tenant_id || null,
+        tenant_id: contract?.tenant_id || null,
+        tenant: tenant ? `${tenant.first_name} ${tenant.last_name}` : 'ไม่มีผู้เช่า',
+        roomRate: roomRate,
+        room_rate: roomRate,
+        water_prev: reading.water_prev || 0,
+        water_curr: reading.water_curr || 0,
+        electric_prev: reading.electric_prev || 0,
+        electric_curr: reading.electric_curr || 0,
+        waterUsage: waterUsage,
+        water_usage: waterUsage,
+        electricUsage: electricUsage,
+        electric_usage: electricUsage,
+        waterRate: waterRateValue,
+        water_rate: waterRateValue,
+        electricityRate: electricRateValue,
+        electricity_rate: electricRateValue,
+        water_charge: waterCharge,
+        electricity_charge: electricityCharge,
+        total_amount: totalAmount,
+        has_invoice: !!invoice,
+        contract_status: contract?.status || 'no_contract',
+        reading_date: reading.created_at
+      };
+    });
+
+    res.json(formattedData);
   } catch (error) {
     console.error("เกิดข้อผิดพลาดใน getRoomsByMeterRecordId:", error);
     res
@@ -141,7 +196,6 @@ exports.getRoomsByMeterRecordId = async (req, res) => {
 exports.createInvoices = async (req, res) => {
   const { dormId } = req.params;
   const user_id = req.user.user_id;
-  const client = await pool.connect();
 
   // ✅ ย้ายฟังก์ชันมาข้างบน
   const generateInvoiceNumber = () => {
@@ -157,12 +211,15 @@ exports.createInvoices = async (req, res) => {
 
   try {
     // ตรวจสอบว่าหอพักเป็นของ user ที่ login
-    const ownershipCheck = await pool.query(
-      "SELECT dorm_id FROM dormitories WHERE dorm_id = $1 AND user_id = $2",
-      [dormId, user_id]
-    );
+    const ownershipCheck = await prisma.dormitories.findFirst({
+      where: {
+        dorm_id: parseInt(dormId),
+        user_id: user_id
+      },
+      select: { dorm_id: true }
+    });
 
-    if (ownershipCheck.rows.length === 0) {
+    if (!ownershipCheck) {
       return res
         .status(403)
         .json({ error: "Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้" });
@@ -170,6 +227,20 @@ exports.createInvoices = async (req, res) => {
 
     const { meterRecordId, billMonth, dueDate, lateFeePerDay, rooms } =
       req.body;
+
+    // Validate input data
+    if (!meterRecordId || !billMonth || !dueDate || !lateFeePerDay || !rooms || !Array.isArray(rooms)) {
+      return res.status(400).json({
+        error: "ข้อมูลไม่ครบถ้วน",
+        details: "กรุณาตรวจสอบ meterRecordId, billMonth, dueDate, lateFeePerDay, และ rooms"
+      });
+    }
+
+    if (rooms.length === 0) {
+      return res.status(400).json({
+        error: "ไม่มีข้อมูลห้องที่จะสร้างใบแจ้งหนี้"
+      });
+    }
 
     // แปลง YYYY-MM เป็น YYYY-MM-01
     const formatBillMonth = (billMonth) => {
@@ -180,141 +251,185 @@ exports.createInvoices = async (req, res) => {
     };
 
     const formattedBillMonth = formatBillMonth(billMonth);
-    console.log("📅 Formatted bill month:", formattedBillMonth);
 
-    await client.query("BEGIN");
+    await prisma.$transaction(async (tx) => {
+      try {
+        // สร้าง monthly invoice
+        const monthlyInvoice = await tx.monthly_invoices.create({
+          data: {
+            meter_record_id: parseInt(meterRecordId),
+            dorm_id: parseInt(dormId),
+            issue_date: new Date(),
+            due_date: new Date(dueDate),
+            charge_per_day: parseFloat(lateFeePerDay),
+            month: new Date(formattedBillMonth)
+          }
+        });
 
-    const monthlyInvoiceRes = await client.query(
-      `INSERT INTO monthly_invoices (
-        meter_record_id, dorm_id, issue_date, due_date, charge_per_day, month
-      ) VALUES ($1, $2, CURRENT_DATE, $3, $4, $5)
-      RETURNING monthly_invoice_id`,
-      [meterRecordId, dormId, dueDate, lateFeePerDay, formattedBillMonth]
-    );
-    const monthlyInvoiceId = monthlyInvoiceRes.rows[0].monthly_invoice_id;
+        const monthlyInvoiceId = monthlyInvoice.monthly_invoice_id;
 
-    for (const room of rooms) {
-      // ตรวจสอบข้อมูลห้อง
-      if (!room.roomId || !room.tenantId) {
-        console.error("❌ Missing roomId or tenantId for room:", room);
-        throw new Error(
-          `ข้อมูลห้องไม่ครบถ้วน: ห้อง ${room.roomId || "ไม่ระบุ"}`
-        );
-      }
+      for (const room of rooms) {
+        console.log('🏠 Processing room:', {
+          roomNumber: room.room_number,
+          roomId: room.roomId || room.room_id,
+          tenantId: room.tenantId || room.tenant_id,
+          roomRate: room.roomRate || room.room_rate,
+          waterUsage: room.waterUsage || room.water_usage
+        });
 
-      const invoiceNumber = generateInvoiceNumber();
+        // ตรวจสอบข้อมูลห้อง (รองรับทั้ง camelCase และ snake_case)
+        const roomId = room.roomId || room.room_id;
+        const tenantId = room.tenantId || room.tenant_id;
+        
+        if (!roomId || !tenantId) {
+          console.error("❌ Missing roomId/tenantId for room:", room);
+          throw new Error(
+            `ข้อมูลห้องไม่ครบถ้วน: ห้อง ${roomId || "ไม่ระบุ"}`
+          );
+        }
 
-      // คำนวณยอดรวม
-      const roomRate = parseFloat(room.roomRate) || 0;
-      const waterCharge =
-        (parseInt(room.waterUsage) || 0) * (parseFloat(room.waterRate) || 0);
-      const electricCharge =
-        (parseInt(room.electricUsage) || 0) *
-        (parseFloat(room.electricityRate) || 0);
-      const totalAmount = roomRate + waterCharge + electricCharge;
+        const invoiceNumber = generateInvoiceNumber();
 
-      const invoiceRes = await client.query(
-        `INSERT INTO invoice_receipts (
-          monthly_invoice_id, dorm_id, utility_rate_id, room_id, tenant_id,
-          total, status, created_at, invoice_number, bill_month, due_date
-        ) VALUES (
-          $1, $2,
-          (SELECT utility_rate_id FROM utility_rates WHERE dorm_id = $2 ORDER BY start_date DESC LIMIT 1),
-          $3, $4, $5, 'unpaid', NOW(), $6, $7, $8
-        ) RETURNING invoice_receipt_id`,
-        [
-          monthlyInvoiceId,
-          dormId,
-          room.roomId,
-          room.tenantId,
-          totalAmount,
-          invoiceNumber,
-          formattedBillMonth,
-          dueDate,
-        ]
-      );
+        // คำนวณยอดรวม (รองรับทั้ง camelCase และ snake_case)
+        const roomRate = parseFloat(room.roomRate || room.room_rate) || 0;
+        const waterUsage = parseInt(room.waterUsage || room.water_usage) || 0;
+        const waterRate = parseFloat(room.waterRate || room.water_rate) || 0;
+        const electricUsage = parseInt(room.electricUsage || room.electric_usage) || 0;
+        const electricityRate = parseFloat(room.electricityRate || room.electricity_rate) || 0;
+        
+        const waterCharge = waterUsage * waterRate;
+        const electricCharge = electricUsage * electricityRate;
+        const totalAmount = roomRate + waterCharge + electricCharge;
+        // ดึงข้อมูลอัตราค่าสาธารณูปโภคล่าสุด
+        const utilityRate = await tx.utility_rates.findFirst({
+          where: { dorm_id: parseInt(dormId) },
+          orderBy: { start_date: 'desc' }
+        });
 
-      const invoiceId = invoiceRes.rows[0].invoice_receipt_id;
+        // สร้างใบแจ้งหนี้
+        const invoice = await tx.invoice_receipts.create({
+          data: {
+            monthly_invoice_id: monthlyInvoiceId,
+            dorm_id: parseInt(dormId),
+            utility_rate_id: utilityRate?.utility_rate_id,
+            room_id: parseInt(roomId),
+            tenant_id: parseInt(tenantId),
+            total: totalAmount,
+            status: 'unpaid',
+            invoice_number: invoiceNumber,
+            bill_month: new Date(formattedBillMonth),
+            due_date: new Date(dueDate)
+          }
+        });
 
-      // ✅ เพิ่มรายการบิลที่แยกออกจากกัน
-      await client.query(
-        `
-        INSERT INTO invoice_receipt_items (
-          invoice_receipt_id, item_type, description, unit_count, price
-        )
-        VALUES 
-          ($1, 'rent', 'ค่าเช่าห้อง', 1, $2),
-          ($1, 'water', $3, $4, $5),
-          ($1, 'electric', $6, $7, $8)
-      `,
-        [
-          invoiceId,
-          parseFloat(room.roomRate) || 0,
-          `ค่าน้ำ: ${parseInt(room.waterUsage) || 0} หน่วย`,
-          parseInt(room.waterUsage) || 0,
-          parseFloat(room.waterRate) || 0,
-          `ค่าไฟ: ${parseInt(room.electricUsage) || 0} หน่วย`,
-          parseInt(room.electricUsage) || 0,
-          parseFloat(room.electricityRate) || 0,
-        ]
-      );
+        const invoiceId = invoice.invoice_receipt_id;
 
-      // ✅ เพิ่มบริการรายเดือนจากสัญญา
-      const contractServicesRes = await client.query(
-        `
-        SELECT service_name, service_price, quantity
-        FROM monthly_service cs
-        JOIN contracts c ON cs.contract_id = c.contract_id
-        WHERE c.room_id = $1 AND c.status = 'active' AND cs.is_active = true
-      `,
-        [room.roomId]
-      );
-
-      for (const service of contractServicesRes.rows) {
-        await client.query(
-          `
-          INSERT INTO invoice_receipt_items (
-            invoice_receipt_id, item_type, description, unit_count, price
-          ) VALUES ($1, 'service', $2, $3, $4)
-        `,
-          [
-            invoiceId,
-            service.service_name,
-            service.quantity || 1,
-            service.service_price,
+        // ✅ เพิ่มรายการบิลที่แยกออกจากกัน (ใช้ตัวแปรที่คำนวณแล้ว)
+        await tx.invoice_receipt_items.createMany({
+          data: [
+            {
+              invoice_receipt_id: invoiceId,
+              item_type: 'rent',
+              description: 'ค่าเช่าห้อง',
+              unit_count: 1,
+              price: roomRate,
+              amount: roomRate
+            },
+            {
+              invoice_receipt_id: invoiceId,
+              item_type: 'water',
+              description: `ค่าน้ำ: ${waterUsage} หน่วย`,
+              unit_count: waterUsage,
+              price: waterRate,
+              amount: waterCharge
+            },
+            {
+              invoice_receipt_id: invoiceId,
+              item_type: 'electric',
+              description: `ค่าไฟ: ${electricUsage} หน่วย`,
+              unit_count: electricUsage,
+              price: electricityRate,
+              amount: electricCharge
+            }
           ]
-        );
+        });
+
+        // ✅ เพิ่มบริการรายเดือนจากสัญญา
+        const contractServices = await tx.monthly_service.findMany({
+          where: {
+            contracts: {
+              room_id: parseInt(roomId),
+              status: 'active'
+            },
+            is_active: true
+          }
+        });
+
+        if (contractServices.length > 0) {
+          const serviceItems = contractServices.map(service => ({
+            invoice_receipt_id: invoiceId,
+            item_type: 'service',
+            description: service.service_name,
+            unit_count: service.quantity || 1,
+            price: service.service_price,
+            amount: parseFloat(service.service_price.toString()) * (service.quantity || 1)
+          }));
+
+          await tx.invoice_receipt_items.createMany({
+            data: serviceItems
+          });
+        }
+
+        // ✅ อัปเดตยอดรวมใน invoice (ใช้ transaction context)
+        const invoiceItems = await tx.invoice_receipt_items.findMany({
+          where: {
+            invoice_receipt_id: invoiceId
+          },
+          select: {
+            item_type: true,
+            amount: true
+          }
+        });
+
+        const calculatedTotal = invoiceItems.reduce((sum, item) => {
+          const amount = parseFloat(item.amount?.toString()) || 0;
+          // ตรวจสอบว่าเป็น discount หรือไม่
+          if (item.item_type === "discount") {
+            // สำหรับ discount ให้ลบออกจาก total (ถ้า amount เป็น positive ให้แปลงเป็น negative)
+            return sum - Math.abs(amount);
+          }
+          return sum + amount;
+        }, 0);
+
+        // อัพเดท total ในตาราง invoice_receipts
+        await tx.invoice_receipts.update({
+          where: {
+            invoice_receipt_id: invoiceId
+          },
+          data: {
+            total: calculatedTotal,
+            updated_at: new Date()
+          }
+        });
+
+        console.log(`✅ Invoice ${invoiceId} created with total: ${calculatedTotal}`);
+
       }
+      } catch (txError) {
+        console.error('❌ Transaction error:', txError);
+        throw txError; // Re-throw เพื่อให้ transaction rollback
+      }
+    });
 
-      // ✅ คำนวณยอดรวมใหม่ (รวมบริการรายเดือน)
-      const serviceTotal = contractServicesRes.rows.reduce(
-        (sum, service) =>
-          sum + parseFloat(service.service_price) * (service.quantity || 1),
-        0
-      );
-      const finalTotal = totalAmount + serviceTotal;
-
-      // อัปเดตยอดรวมใน invoice
-      await client.query(
-        "UPDATE invoice_receipts SET total = $1 WHERE invoice_receipt_id = $2",
-        [finalTotal, invoiceId]
-      );
-
-      console.log("✅ Invoice created:", invoiceId);
-    }
-
-    await client.query("COMMIT");
+    console.log('✅ All invoices created successfully');
     res.status(201).json({ message: "สร้างใบแจ้งหนี้สำเร็จแล้ว" });
   } catch (error) {
-    await client.query("ROLLBACK");
     console.error("❌ createInvoices error:", error);
-    console.error("❌ Stack trace:", error.stack);
+    console.error("❌ Error stack:", error.stack);
     res.status(500).json({
       error: "เกิดข้อผิดพลาดในการสร้างใบแจ้งหนี้",
       details: error.message,
     });
-  } finally {
-    client.release();
   }
 };
 
@@ -325,28 +440,43 @@ exports.getAvailableInvoiceMonths = async (req, res) => {
 
   try {
     // ตรวจสอบว่าหอพักเป็นของ user ที่ login
-    const ownershipCheck = await pool.query(
-      "SELECT dorm_id FROM dormitories WHERE dorm_id = $1 AND user_id = $2",
-      [dormId, user_id]
-    );
+    const ownershipCheck = await prisma.dormitories.findFirst({
+      where: {
+        dorm_id: parseInt(dormId),
+        user_id: user_id
+      },
+      select: { dorm_id: true }
+    });
 
-    if (ownershipCheck.rows.length === 0) {
+    if (!ownershipCheck) {
       return res
         .status(403)
         .json({ error: "Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้" });
     }
 
-    const result = await pool.query(
-      `
-        SELECT DISTINCT TO_CHAR(bill_month, 'YYYY-MM') as bill_month
-        FROM invoice_receipts
-        WHERE dorm_id = $1
-        ORDER BY bill_month DESC
-      `,
-      [dormId]
-    );
+    // ดึงข้อมูลเดือนที่มีใบแจ้งหนี้แล้วจัดรูปแบบใน JavaScript
+    const invoices = await prisma.invoice_receipts.findMany({
+      where: {
+        dorm_id: parseInt(dormId),
+        bill_month: {
+          not: null
+        }
+      },
+      select: {
+        bill_month: true
+      },
+      distinct: ['bill_month'],
+      orderBy: {
+        bill_month: 'desc'
+      }
+    });
 
-    res.json(result.rows);
+    // แปลงวันที่เป็น YYYY-MM format
+    const result = invoices.map(invoice => ({
+      bill_month: new Date(invoice.bill_month).toISOString().substring(0, 7)
+    }));
+
+    res.json(result);
   } catch (error) {
     console.error("Error fetching available invoice months:", error);
     res.status(500).json({ error: "ไม่สามารถโหลดรายการรอบบิลได้" });
@@ -361,156 +491,126 @@ exports.getInvoicesByDormAndMonth = async (req, res) => {
 
   try {
     // ตรวจสอบว่าหอพักเป็นของ user ที่ login
-    const ownershipCheck = await pool.query(
-      "SELECT dorm_id FROM dormitories WHERE dorm_id = $1 AND user_id = $2",
-      [dormId, user_id]
-    );
+    const ownershipCheck = await prisma.dormitories.findFirst({
+      where: {
+        dorm_id: parseInt(dormId),
+        user_id: user_id
+      },
+      select: { dorm_id: true }
+    });
 
-    if (ownershipCheck.rows.length === 0) {
+    if (!ownershipCheck) {
       return res
         .status(403)
         .json({ error: "Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้" });
     }
-    let result;
 
+    let whereClause = {
+      dorm_id: parseInt(dormId)
+    };
+
+    // ถ้ามี month parameter ให้กรองตามเดือน
     if (month) {
-      // ถ้ามี month parameter ให้กรองตามเดือน - ใช้ query แบบง่าย
-      const basicQuery = `
-        SELECT 
-          ir.invoice_receipt_id AS id,
-          r.room_number,
-          r.floor_number AS floor,
-          COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') AS tenant,
-          COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') AS tenant_name,
-          t.address AS tenant_address,
-          t.phone_number AS tenant_phone,
-          t.email AS tenant_email,
-          t.subdistrict AS tenant_subdistrict,
-          t.district AS tenant_district,
-          t.province AS tenant_province,
-          ir.total AS amount,
-          ir.status,
-          ir.invoice_number,
-          ir.due_date,
-          d.name AS dorm_name,
-          d.address AS dorm_address,
-          d.phone AS dorm_phone,
-          d.subdistrict AS dorm_subdistrict,
-          d.district AS dorm_district,
-          d.province AS dorm_province,
-          TO_CHAR(ir.bill_month, 'YYYY-MM') AS bill_month
-        FROM invoice_receipts ir
-        JOIN rooms r ON ir.room_id = r.room_id
-        LEFT JOIN tenants t ON ir.tenant_id = t.tenant_id
-        JOIN dormitories d ON ir.dorm_id = d.dorm_id
-        WHERE ir.dorm_id = $1 AND TO_CHAR(ir.bill_month, 'YYYY-MM') = $2
-        ORDER BY r.floor_number, r.room_number;
-      `;
-
-      const basicResult = await pool.query(basicQuery, [dormId, month]);
-
-      // Then get invoice items for each bill
-      for (const bill of basicResult.rows) {
-        const itemsResult = await pool.query(
-          `
-          SELECT 
-            invoice_receipt_item_id as id,
-            description,
-            amount,
-            unit_count,
-            price,
-            item_type
-          FROM invoice_receipt_items 
-          WHERE invoice_receipt_id = $1
-        `,
-          [bill.id]
-        );
-
-        bill.invoice_items = itemsResult.rows;
-      }
-
-      result = basicResult;
-    } else {
-      // ถ้าไม่มี month parameter ให้แสดงทั้งหมด - ใช้ GROUP BY เพื่อรวม items
-      const sqlQuery = `
-        SELECT 
-          ii.invoice_receipt_id AS id,
-          r.room_number,
-          r.floor_number AS floor,
-          COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') AS tenant,
-          COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') AS tenant_name,
-          t.address AS tenant_address,
-          t.phone_number AS tenant_phone,
-          t.email AS tenant_email,
-          t.subdistrict AS tenant_subdistrict,
-          t.district AS tenant_district,
-          t.province AS tenant_province,
-          ii.total AS amount,
-          ii.status,
-          ii.invoice_number,
-          ii.due_date,
-          d.name AS dorm_name,
-          d.address AS dorm_address,
-          d.phone AS dorm_phone,
-          d.subdistrict AS dorm_subdistrict,
-          d.district AS dorm_district,
-          d.province AS dorm_province,
-          TO_CHAR(ii.bill_month, 'YYYY-MM') AS bill_month,
-          -- รวม invoice items เป็น JSON array
-          JSON_AGG(
-            CASE 
-              WHEN item.invoice_receipt_item_id IS NOT NULL THEN
-                JSON_BUILD_OBJECT(
-                  'id', item.invoice_receipt_item_id,
-                  'description', item.description,
-                  'amount', item.amount,
-                  'unit_count', item.unit_count,
-                  'price', item.price,
-                  'item_type', item.item_type
-                )
-              ELSE NULL
-            END
-          ) FILTER (WHERE item.invoice_receipt_item_id IS NOT NULL) AS invoice_items
-        FROM invoice_receipts ii
-        JOIN rooms r ON ii.room_id = r.room_id
-        LEFT JOIN tenants t ON ii.tenant_id = t.tenant_id
-        JOIN dormitories d ON ii.dorm_id = d.dorm_id
-        LEFT JOIN invoice_receipt_items item ON ii.invoice_receipt_id = item.invoice_receipt_id
-        WHERE ii.dorm_id = $1
-        GROUP BY ii.invoice_receipt_id, r.room_number, r.floor_number, t.first_name, t.last_name, 
-                 t.address, t.phone_number, t.email, t.subdistrict, t.district, t.province,
-                 ii.total, ii.status, ii.invoice_number, ii.due_date,
-                 d.name, d.address, d.phone, d.subdistrict, d.district, d.province,
-                 ii.bill_month
-        ORDER BY ii.bill_month DESC, r.floor_number, r.room_number;
-      `;
-
-      result = await pool.query(sqlQuery, [dormId]);
+      // แปลง YYYY-MM เป็น date range
+      const startDate = new Date(`${month}-01`);
+      const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+      
+      whereClause.bill_month = {
+        gte: startDate,
+        lte: endDate
+      };
     }
 
-    console.log("🏠 Query result length:", result.rows.length);
-    if (result.rows.length > 0) {
-      console.log("🏠 First row sample:", {
-        id: result.rows[0].id,
-        room_number: result.rows[0].room_number,
-        tenant: result.rows[0].tenant,
-      });
+    const invoices = await prisma.invoice_receipts.findMany({
+      where: whereClause,
+      include: {
+        rooms: {
+          select: {
+            room_number: true,
+            floor_number: true
+          }
+        },
+        tenants: {
+          select: {
+            first_name: true,
+            last_name: true,
+            address: true,
+            phone_number: true,
+            email: true,
+            subdistrict: true,
+            district: true,
+            province: true
+          }
+        },
+        dormitories: {
+          select: {
+            name: true,
+            address: true,
+            phone: true,
+            subdistrict: true,
+            district: true,
+            province: true
+          }
+        },
+        invoice_receipt_items: {
+          select: {
+            invoice_receipt_item_id: true,
+            description: true,
+            amount: true,
+            unit_count: true,
+            price: true,
+            item_type: true
+          }
+        }
+      },
+      orderBy: [
+        { bill_month: 'desc' },
+        { rooms: { floor_number: 'asc' } },
+        { rooms: { room_number: 'asc' } }
+      ]
+    });
 
-      // Debug ห้อง 104
-      const room104 = result.rows.find((row) => row.room_number === "104");
-      if (room104) {
-        console.log("🏠 Room 104 details:", {
-          id: room104.id,
-          room_number: room104.room_number,
-          tenant: room104.tenant,
-          tenant_name: room104.tenant_name,
-        });
-      } else {
-        console.log("🏠 Room 104 not found in results");
-      }
-    }
+    // จัดรูปแบบข้อมูล
+    const formattedInvoices = invoices.map(invoice => {
+      const tenant = invoice.tenants;
+      const tenantName = tenant ? `${tenant.first_name} ${tenant.last_name}` : 'ไม่มีผู้เช่า';
+      
+      return {
+        id: invoice.invoice_receipt_id,
+        room_number: invoice.rooms.room_number,
+        floor: invoice.rooms.floor_number,
+        tenant: tenantName,
+        tenant_name: tenantName,
+        tenant_address: tenant?.address,
+        tenant_phone: tenant?.phone_number,
+        tenant_email: tenant?.email,
+        tenant_subdistrict: tenant?.subdistrict,
+        tenant_district: tenant?.district,
+        tenant_province: tenant?.province,
+        amount: invoice.total,
+        status: invoice.status,
+        invoice_number: invoice.invoice_number,
+        due_date: invoice.due_date,
+        dorm_name: invoice.dormitories.name,
+        dorm_address: invoice.dormitories.address,
+        dorm_phone: invoice.dormitories.phone,
+        dorm_subdistrict: invoice.dormitories.subdistrict,
+        dorm_district: invoice.dormitories.district,
+        dorm_province: invoice.dormitories.province,
+        bill_month: invoice.bill_month ? new Date(invoice.bill_month).toISOString().substring(0, 7) : null,
+        invoice_items: invoice.invoice_receipt_items.map(item => ({
+          id: item.invoice_receipt_item_id,
+          description: item.description,
+          amount: item.amount,
+          unit_count: item.unit_count,
+          price: item.price,
+          item_type: item.item_type
+        }))
+      };
+    });
 
-    res.json(result.rows);
+
+    res.json(formattedInvoices);
   } catch (error) {
     res.status(500).json({
       error: "ไม่สามารถโหลดข้อมูลบิลได้",
@@ -525,139 +625,147 @@ exports.getInvoiceItemsByInvoiceId = async (req, res) => {
 
   try {
     // ดึงข้อมูลใบแจ้งหนี้หลัก
-    const invoiceQuery = `
-    SELECT 
-      i.invoice_receipt_id,
-      i.monthly_invoice_id,
-      i.invoice_number,
-      i.room_id,
-      r.room_number,
-      r.floor_number,
-      COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') AS tenant_name,
-      t.address AS tenant_address,
-      t.phone_number AS tenant_phone,
-      t.province AS tenant_province,
-      t.district AS tenant_district,
-      t.subdistrict AS tenant_subdistrict,
-      i.status,
-      i.created_at,
-      i.total,
-      i.due_date,
-      d.name AS dorm_name,
-      d.address AS dorm_address,
-      d.phone AS dorm_phone,
-      d.subdistrict,
-      d.district,
-      d.province,
-      mr.meter_record_date,
-      mi.charge_per_day,
-      TO_CHAR(mr.meter_record_date, 'YYYY-MM') AS bill_month
-    FROM invoice_receipts i
-    JOIN monthly_invoices mi ON i.monthly_invoice_id = mi.monthly_invoice_id
-    JOIN rooms r ON i.room_id = r.room_id
-    JOIN dormitories d ON i.dorm_id = d.dorm_id
-    LEFT JOIN tenants t ON i.tenant_id = t.tenant_id
-    LEFT JOIN meter_records mr ON mi.meter_record_id = mr.meter_record_id
-    WHERE i.invoice_receipt_id = $1 AND i.dorm_id = $2;
-    `;
+    const invoice = await prisma.invoice_receipts.findFirst({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId),
+        dorm_id: parseInt(dormId)
+      },
+      include: {
+        monthly_invoices: {
+          include: {
+            meter_records: true
+          }
+        },
+        rooms: true,
+        tenants: true,
+        dormitories: true
+      }
+    });
 
-    const invoiceResult = await pool.query(invoiceQuery, [invoiceId, dormId]);
-
-    if (invoiceResult.rows.length === 0) {
+    if (!invoice) {
       return res.status(404).json({ error: "ไม่พบใบแจ้งหนี้ที่ระบุ" });
     }
-
-    const invoice = invoiceResult.rows[0];
 
     // อัปเดตค่าปรับล่าช้าอัตโนมัติ
     const lateData = await exports.updateLateFee(invoiceId);
 
     // ดึงข้อมูลรายการค่าใช้จ่าย (invoice_items) หลังจากอัปเดตค่าปรับ
-    const itemsQuery = `
-      SELECT 
-        invoice_receipt_item_id,
-        description,
-        item_type as type,
-        price as rate,
-        amount,
-        unit_count
-      FROM invoice_receipt_items
-      WHERE invoice_receipt_id = $1
-      ORDER BY 
-        CASE item_type
-          WHEN 'rent' THEN 1
-          WHEN 'water' THEN 2
-          WHEN 'electric' THEN 3
-          WHEN 'service' THEN 4
-          WHEN 'discount' THEN 5
-          WHEN 'late_fee' THEN 6
-          ELSE 7
-        END,
-        invoice_receipt_item_id
-    `;
-
-    const itemsResult = await pool.query(itemsQuery, [invoiceId]);
+    const invoiceItems = await prisma.invoice_receipt_items.findMany({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId)
+      },
+      orderBy: [
+        {
+          item_type: 'asc'
+        },
+        {
+          invoice_receipt_item_id: 'asc'
+        }
+      ]
+    });
 
     // คำนวณ total จากรายการจริง แทนการใช้ค่าจากฐานข้อมูล
-    const calculatedTotal = itemsResult.rows.reduce((sum, item) => {
-      const amount = parseFloat(item.amount) || 0;
+    const calculatedTotal = invoiceItems.reduce((sum, item) => {
+      const amount = parseFloat(item.amount?.toString()) || 0;
       // ตรวจสอบว่าเป็น discount หรือไม่
-      if (item.type === "discount") {
+      if (item.item_type === "discount") {
         // สำหรับ discount ให้ลบออกจาก total (ถ้า amount เป็น positive ให้แปลงเป็น negative)
         return sum - Math.abs(amount);
       }
       return sum + amount;
     }, 0);
-    // ดึงข้อมูลการชำระเงินทั้งหมด
-    const paymentsQuery = `
-      SELECT 
-        COALESCE(SUM(payment_amount), 0) as total_paid,
-        COUNT(*) as payment_count
-      FROM payments 
-      WHERE invoice_receipt_id = $1
-    `;
 
-    const paymentsResult = await pool.query(paymentsQuery, [invoiceId]);
-    const paymentData = paymentsResult.rows[0];
-    const totalPaid = parseFloat(paymentData.total_paid);
+    // ดึงข้อมูลการชำระเงินทั้งหมด
+    const totalPaidResult = await prisma.payments.aggregate({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId)
+      },
+      _sum: {
+        payment_amount: true
+      },
+      _count: {
+        payment_id: true
+      }
+    });
+
+    const totalPaid = parseFloat(totalPaidResult._sum.payment_amount?.toString()) || 0;
 
     // ใช้ยอดรวมที่คำนวณใหม่แทนยอดจากฐานข้อมูล
     const finalTotal = calculatedTotal;
     const balance = finalTotal - totalPaid;
+
     // จัดรูปแบบผลลัพธ์
+    const tenant = invoice.tenants;
+    const tenantName = tenant ? `${tenant.first_name} ${tenant.last_name}` : 'ไม่มีผู้เช่า';
+    const meterRecord = invoice.monthly_invoices?.meter_records;
+    const billMonth = meterRecord?.meter_record_date 
+      ? new Date(meterRecord.meter_record_date).toISOString().substring(0, 7)
+      : null;
+
+    // จัดเรียงลำดับ item_type สำหรับการเรียง
+    const getItemTypeOrder = (itemType) => {
+      switch (itemType) {
+        case 'rent': return 1;
+        case 'water': return 2;
+        case 'electric': return 3;
+        case 'service': return 4;
+        case 'discount': return 5;
+        case 'late_fee': return 6;
+        default: return 7;
+      }
+    };
+
+    const formattedItems = invoiceItems
+      .sort((a, b) => {
+        const orderA = getItemTypeOrder(a.item_type);
+        const orderB = getItemTypeOrder(b.item_type);
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return a.invoice_receipt_item_id - b.invoice_receipt_item_id;
+      })
+      .map(item => ({
+        invoice_receipt_item_id: item.invoice_receipt_item_id,
+        description: item.description,
+        type: item.item_type,
+        rate: item.price,
+        amount: item.amount,
+        unit_count: item.unit_count
+      }));
+
     const response = {
       invoice: {
         invoice_receipt_id: invoice.invoice_receipt_id,
         monthly_invoice_id: invoice.monthly_invoice_id,
         invoice_number: invoice.invoice_number,
         room_id: invoice.room_id,
-        room_number: invoice.room_number,
-        floor_number: invoice.floor_number,
-        tenant_name: invoice.tenant_name,
-        tenant_address: invoice.tenant_address,
-        tenant_phone: invoice.tenant_phone,
-        tenant_province: invoice.tenant_province,
-        tenant_district: invoice.tenant_district,
-        tenant_subdistrict: invoice.tenant_subdistrict,
+        room_number: invoice.rooms.room_number,
+        floor_number: invoice.rooms.floor_number,
+        tenant_name: tenantName,
+        tenant_address: tenant?.address,
+        tenant_phone: tenant?.phone_number,
+        tenant_province: tenant?.province,
+        tenant_district: tenant?.district,
+        tenant_subdistrict: tenant?.subdistrict,
         status: balance <= 0 ? "paid" : "unpaid", // อัปเดต status ตามยอดคงเหลือ
         created_at: invoice.created_at,
         total: finalTotal, // ใช้ยอดรวมที่คำนวณใหม่
         total_paid: totalPaid,
         balance: balance,
-        dorm_name: invoice.dorm_name,
-        dorm_address: invoice.dorm_address,
-        dorm_subdistrict: invoice.subdistrict,
-        dorm_district: invoice.district,
-        dorm_province: invoice.province,
-        dorm_phone: invoice.dorm_phone,
-        meter_record_date: invoice.meter_record_date,
-        bill_month: invoice.bill_month,
+        dorm_name: invoice.dormitories.name,
+        dorm_address: invoice.dormitories.address,
+        dorm_subdistrict: invoice.dormitories.subdistrict,
+        dorm_district: invoice.dormitories.district,
+        dorm_province: invoice.dormitories.province,
+        dorm_phone: invoice.dormitories.phone,
+        meter_record_date: meterRecord?.meter_record_date,
+        bill_month: billMonth,
         due_date: invoice.due_date,
-        charge_per_day: invoice.charge_per_day,
+        charge_per_day: invoice.monthly_invoices?.charge_per_day,
         late_fee: lateData.lateFee,
         late_days: lateData.lateDays,
       },
-      invoice_items: itemsResult.rows,
+      invoice_items: formattedItems,
     };
 
     res.json(response);
@@ -682,12 +790,15 @@ exports.addInvoiceItem = async (req, res) => {
 
   try {
     // ตรวจสอบว่า invoice มีอยู่จริงหรือไม่
-    const invoiceCheck = await pool.query(
-      "SELECT invoice_receipt_id FROM invoice_receipts WHERE invoice_receipt_id = $1 AND dorm_id = $2",
-      [invoiceId, dormId]
-    );
+    const invoiceCheck = await prisma.invoice_receipts.findFirst({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId),
+        dorm_id: parseInt(dormId)
+      },
+      select: { invoice_receipt_id: true }
+    });
 
-    if (invoiceCheck.rows.length === 0) {
+    if (!invoiceCheck) {
       return res.status(404).json({ error: "ไม่พบใบแจ้งหนี้ที่ระบุ" });
     }
 
@@ -704,22 +815,25 @@ exports.addInvoiceItem = async (req, res) => {
     const calculatedAmount = finalPrice * unitCount;
 
     // เพิ่มรายการใหม่
-    const result = await pool.query(
-      `INSERT INTO invoice_receipt_items (
-            invoice_receipt_id, item_type, description, price, unit_count
-          ) VALUES ($1, $2, $3, $4, $5)
-          RETURNING *`,
-      [invoiceId, type, description, finalPrice, unitCount]
-    );
+    const result = await prisma.invoice_receipt_items.create({
+      data: {
+        invoice_receipt_id: parseInt(invoiceId),
+        item_type: type,
+        description: description,
+        price: finalPrice,
+        unit_count: unitCount,
+        amount: calculatedAmount
+      }
+    });
 
     // อัพเดท total ในตาราง invoices
-    await updateInvoiceTotal(invoiceId);
+    await exports.updateInvoiceTotal(invoiceId);
 
     res.status(201).json({
       message: "เพิ่มรายการเรียบร้อย",
       item: {
-        ...result.rows[0],
-        invoice_item_id: result.rows[0].invoice_receipt_item_id,
+        ...result,
+        invoice_item_id: result.invoice_receipt_item_id,
       },
     });
   } catch (error) {
@@ -735,19 +849,24 @@ exports.updateInvoiceItem = async (req, res) => {
 
   try {
     // ตรวจสอบว่า item มีอยู่จริงและไม่ใช่รายการค่าพื้นฐาน
-    const itemCheck = await pool.query(
-      `SELECT ii.*, i.dorm_id 
-           FROM invoice_receipt_items ii 
-           JOIN invoice_receipts i ON ii.invoice_receipt_id = i.invoice_receipt_id 
-           WHERE ii.invoice_receipt_item_id = $1 AND i.invoice_receipt_id = $2 AND i.dorm_id = $3`,
-      [itemId, invoiceId, dormId]
-    );
+    const item = await prisma.invoice_receipt_items.findFirst({
+      where: {
+        invoice_receipt_item_id: parseInt(itemId),
+        invoice_receipts: {
+          invoice_receipt_id: parseInt(invoiceId),
+          dorm_id: parseInt(dormId)
+        }
+      },
+      include: {
+        invoice_receipts: {
+          select: { dorm_id: true }
+        }
+      }
+    });
 
-    if (itemCheck.rows.length === 0) {
+    if (!item) {
       return res.status(404).json({ error: "ไม่พบรายการที่ระบุ" });
     }
-
-    const item = itemCheck.rows[0];
 
     // ป้องกันการแก้ไขรายการค่าพื้นฐาน
     if (
@@ -761,25 +880,24 @@ exports.updateInvoiceItem = async (req, res) => {
     }
 
     // อัปเดตรายการ
-    const result = await pool.query(
-      `UPDATE invoice_receipt_items 
-           SET description = $1, price = $2, unit_count = $3
-           WHERE invoice_receipt_item_id = $4
-           RETURNING *`,
-      [
-        description || item.description,
-        parseFloat(rate) || item.price,
-        unit_count || item.unit_count,
-        itemId,
-      ]
-    );
+    const result = await prisma.invoice_receipt_items.update({
+      where: {
+        invoice_receipt_item_id: parseInt(itemId)
+      },
+      data: {
+        description: description || item.description,
+        price: parseFloat(rate) || item.price,
+        unit_count: unit_count || item.unit_count,
+        amount: (parseFloat(rate) || item.price) * (unit_count || item.unit_count)
+      }
+    });
 
     // อัพเดท total ในตาราง invoices
-    await updateInvoiceTotal(invoiceId);
+    await exports.updateInvoiceTotal(invoiceId);
 
     res.json({
       message: "แก้ไขรายการเรียบร้อย",
-      item: result.rows[0],
+      item: result,
     });
   } catch (error) {
     console.error("❌ แก้ไขรายการในใบแจ้งหนี้ล้มเหลว:", error);
@@ -793,19 +911,19 @@ exports.deleteInvoiceItem = async (req, res) => {
 
   try {
     // ตรวจสอบว่า item มีอยู่จริงและไม่ใช่รายการค่าพื้นฐาน
-    const itemCheck = await pool.query(
-      `SELECT ii.*, i.dorm_id 
-           FROM invoice_receipt_items ii 
-           JOIN invoice_receipts i ON ii.invoice_receipt_id = i.invoice_receipt_id 
-           WHERE ii.invoice_receipt_item_id = $1 AND i.invoice_receipt_id = $2 AND i.dorm_id = $3`,
-      [itemId, invoiceId, dormId]
-    );
+    const item = await prisma.invoice_receipt_items.findFirst({
+      where: {
+        invoice_receipt_item_id: parseInt(itemId),
+        invoice_receipts: {
+          invoice_receipt_id: parseInt(invoiceId),
+          dorm_id: parseInt(dormId)
+        }
+      }
+    });
 
-    if (itemCheck.rows.length === 0) {
+    if (!item) {
       return res.status(404).json({ error: "ไม่พบรายการที่ระบุ" });
     }
-
-    const item = itemCheck.rows[0];
 
     // ป้องกันการลบรายการค่าพื้นฐาน
     if (
@@ -819,13 +937,14 @@ exports.deleteInvoiceItem = async (req, res) => {
     }
 
     // ลบรายการ
-    await pool.query(
-      "DELETE FROM invoice_receipt_items WHERE invoice_receipt_item_id = $1",
-      [itemId]
-    );
+    await prisma.invoice_receipt_items.delete({
+      where: {
+        invoice_receipt_item_id: parseInt(itemId)
+      }
+    });
 
     // อัพเดท total ในตาราง invoices
-    await updateInvoiceTotal(invoiceId);
+    await exports.updateInvoiceTotal(invoiceId);
 
     res.json({ message: "ลบรายการเรียบร้อย" });
   } catch (error) {
@@ -838,15 +957,18 @@ exports.deleteInvoiceItem = async (req, res) => {
 exports.updateInvoiceTotal = async (invoiceId) => {
   try {
     // คำนวณยอดรวมโดยคำนึงถึง discount
-    const itemsResult = await pool.query(
-      `SELECT item_type, amount 
-           FROM invoice_receipt_items 
-           WHERE invoice_receipt_id = $1`,
-      [invoiceId]
-    );
+    const invoiceItems = await prisma.invoice_receipt_items.findMany({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId)
+      },
+      select: {
+        item_type: true,
+        amount: true
+      }
+    });
 
-    const calculatedTotal = itemsResult.rows.reduce((sum, item) => {
-      const amount = parseFloat(item.amount) || 0;
+    const calculatedTotal = invoiceItems.reduce((sum, item) => {
+      const amount = parseFloat(item.amount?.toString()) || 0;
       // ตรวจสอบว่าเป็น discount หรือไม่
       if (item.item_type === "discount") {
         // สำหรับ discount ให้ลบออกจาก total (ถ้า amount เป็น positive ให้แปลงเป็น negative)
@@ -855,19 +977,23 @@ exports.updateInvoiceTotal = async (invoiceId) => {
       return sum + amount;
     }, 0);
 
-    console.log(`🔄 อัพเดท total ของ invoice ${invoiceId}: ${calculatedTotal}`);
+  
 
     // อัพเดท total ในตาราง invoice_receipts
-    const result = await pool.query(
-      `UPDATE invoice_receipts 
-           SET total = $1,
-               updated_at = CURRENT_TIMESTAMP
-           WHERE invoice_receipt_id = $2
-           RETURNING total`,
-      [calculatedTotal, invoiceId]
-    );
+    const result = await prisma.invoice_receipts.update({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId)
+      },
+      data: {
+        total: calculatedTotal,
+        updated_at: new Date()
+      },
+      select: {
+        total: true
+      }
+    });
 
-    return result.rows[0]?.total || 0;
+    return result.total || 0;
   } catch (error) {
     console.error("❌ อัพเดท total ใน invoices ล้มเหลว:", error);
     throw error;
@@ -878,19 +1004,23 @@ exports.updateInvoiceTotal = async (invoiceId) => {
 exports.updateLateFee = async (invoiceId) => {
   try {
     // ดึงข้อมูลใบแจ้งหนี้
-    const invoiceQuery = `
-      SELECT i.due_date, i.status, mi.charge_per_day
-      FROM invoice_receipts i
-      JOIN monthly_invoices mi ON i.monthly_invoice_id = mi.monthly_invoice_id
-      WHERE i.invoice_receipt_id = $1
-    `;
-    const invoiceResult = await pool.query(invoiceQuery, [invoiceId]);
+    const invoice = await prisma.invoice_receipts.findFirst({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId)
+      },
+      include: {
+        monthly_invoices: {
+          select: {
+            charge_per_day: true
+          }
+        }
+      }
+    });
 
-    if (invoiceResult.rows.length === 0) {
+    if (!invoice) {
       return { lateFee: 0, lateDays: 0 };
     }
 
-    const invoice = invoiceResult.rows[0];
     const currentDate = new Date();
     const dueDate = new Date(invoice.due_date);
 
@@ -900,37 +1030,46 @@ exports.updateLateFee = async (invoiceId) => {
 
     if (invoice.status === "unpaid" && currentDate > dueDate) {
       lateDays = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24));
-      lateFee = lateDays * (parseFloat(invoice.charge_per_day) || 0);
+      const chargePerDay = parseFloat(invoice.monthly_invoices?.charge_per_day?.toString()) || 0;
+      lateFee = lateDays * chargePerDay;
 
       // ตรวจสอบว่ามีค่าปรับล่าช้าอยู่แล้วหรือไม่
-      const existingLateFeeQuery = `
-        SELECT invoice_receipt_item_id FROM invoice_receipt_items 
-        WHERE invoice_receipt_id = $1 AND item_type = 'late_fee'
-      `;
-      const existingLateFee = await pool.query(existingLateFeeQuery, [
-        invoiceId,
-      ]);
+      const existingLateFee = await prisma.invoice_receipt_items.findFirst({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId),
+          item_type: 'late_fee'
+        }
+      });
 
-      if (existingLateFee.rows.length === 0 && lateFee > 0) {
+      if (existingLateFee === null && lateFee > 0) {
         // เพิ่มค่าปรับใหม่
-        await pool.query(
-          `INSERT INTO invoice_receipt_items (
-            invoice_receipt_id, item_type, description, price, unit_count
-          ) VALUES ($1, 'late_fee', $2, $3, $4)`,
-          [invoiceId, `ค่าปรับล่าช้า (${lateDays} วัน)`, lateFee, lateDays]
-        );
-      } else if (existingLateFee.rows.length > 0) {
+        await prisma.invoice_receipt_items.create({
+          data: {
+            invoice_receipt_id: parseInt(invoiceId),
+            item_type: 'late_fee',
+            description: `ค่าปรับล่าช้า (${lateDays} วัน)`,
+            price: lateFee,
+            unit_count: lateDays,
+            amount: lateFee * lateDays
+          }
+        });
+      } else if (existingLateFee !== null) {
         // อัปเดตค่าปรับที่มีอยู่
-        await pool.query(
-          `UPDATE invoice_receipt_items 
-           SET description = $1, price = $2, unit_count = $3
-           WHERE invoice_receipt_id = $4 AND item_type = 'late_fee'`,
-          [`ค่าปรับล่าช้า (${lateDays} วัน)`, lateFee, lateDays, invoiceId]
-        );
+        await prisma.invoice_receipt_items.update({
+          where: {
+            invoice_receipt_item_id: existingLateFee.invoice_receipt_item_id
+          },
+          data: {
+            description: `ค่าปรับล่าช้า (${lateDays} วัน)`,
+            price: lateFee,
+            unit_count: lateDays,
+            amount: lateFee * lateDays
+          }
+        });
       }
 
       // อัปเดต total
-      await updateInvoiceTotal(invoiceId);
+      await exports.updateInvoiceTotal(invoiceId);
     }
 
     return { lateFee, lateDays };
@@ -964,92 +1103,96 @@ exports.recordPayment = async (req, res) => {
     payment_note,
   });
 
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
+    const result = await prisma.$transaction(async (tx) => {
+      // ตรวจสอบว่าใบแจ้งหนี้มีอยู่จริง
+      const invoice = await tx.invoice_receipts.findFirst({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        },
+        select: {
+          invoice_receipt_id: true,
+          total: true,
+          dorm_id: true
+        }
+      });
 
-    // ตรวจสอบว่าใบแจ้งหนี้มีอยู่จริง
-    const invoiceExistCheck = await client.query(
-      "SELECT invoice_receipt_id, total, dorm_id FROM invoice_receipts WHERE invoice_receipt_id = $1",
-      [invoiceId]
-    );
-
-    console.log("🔍 Invoice Exist Check:", {
-      invoiceId,
-      found: invoiceExistCheck.rows.length,
-      data: invoiceExistCheck.rows[0],
-    });
-
-    if (invoiceExistCheck.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "ไม่พบใบแจ้งหนี้ที่ระบุ" });
-    }
-
-    // ตรวจสอบว่าเป็นของหอพักที่ถูกต้อง
-    const invoice = invoiceExistCheck.rows[0];
-    if (invoice.dorm_id !== parseInt(dormId)) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({ error: "ไม่มีสิทธิ์เข้าถึงใบแจ้งหนี้นี้" });
-    }
-
-    // คำนวณยอดที่ชำระแล้ว
-    const paymentSumResult = await client.query(
-      "SELECT COALESCE(SUM(payment_amount), 0) as total_paid FROM payments WHERE invoice_receipt_id = $1",
-      [invoiceId]
-    );
-
-    const totalPaid = parseFloat(paymentSumResult.rows[0].total_paid) || 0;
-    const remainingAmount = parseFloat(invoice.total) - totalPaid;
-
-    console.log(`💰 Payment Debug:`, {
-      invoiceId,
-      total: invoice.total,
-      totalPaid,
-      remainingAmount,
-    });
-
-    if (remainingAmount <= 0) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ error: "ใบแจ้งหนี้นี้ชำระครบแล้ว" });
-    }
-
-    // สร้างเลขที่ใบเสร็จ
-    const receiptNumber = exports.generateReceiptNumber();
-
-    // บันทึกการชำระเงิน (ชำระเต็มจำนวนที่เหลือ)
-    const paymentResult = await client.query(
-      `INSERT INTO payments (invoice_receipt_id, payment_method, payment_amount, payment_date, payment_note, receipt_number)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [
+      console.log("🔍 Invoice Exist Check:", {
         invoiceId,
-        payment_method,
+        found: !!invoice,
+        data: invoice,
+      });
+
+      if (!invoice) {
+        throw new Error("ไม่พบใบแจ้งหนี้ที่ระบุ");
+      }
+
+      // ตรวจสอบว่าเป็นของหอพักที่ถูกต้อง
+      if (invoice.dorm_id !== parseInt(dormId)) {
+        throw new Error("ไม่มีสิทธิ์เข้าถึงใบแจ้งหนี้นี้");
+      }
+
+      // คำนวณยอดที่ชำระแล้ว
+      const paymentSum = await tx.payments.aggregate({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        },
+        _sum: {
+          payment_amount: true
+        }
+      });
+
+      const totalPaid = parseFloat(paymentSum._sum.payment_amount?.toString()) || 0;
+      const remainingAmount = parseFloat(invoice.total?.toString()) - totalPaid;
+
+      console.log(`💰 Payment Debug:`, {
+        invoiceId,
+        total: invoice.total,
+        totalPaid,
         remainingAmount,
-        payment_date,
-        payment_note,
-        receiptNumber,
-      ]
-    );
+      });
 
-    // อัปเดต status ของใบแจ้งหนี้เป็น 'paid'
-    await client.query(
-      "UPDATE invoice_receipts SET status = $1, paid_date = $2 WHERE invoice_receipt_id = $3",
-      ["paid", payment_date, invoiceId]
-    );
+      if (remainingAmount <= 0) {
+        throw new Error("ใบแจ้งหนี้นี้ชำระครบแล้ว");
+      }
 
-    await client.query("COMMIT");
+      // สร้างเลขที่ใบเสร็จ
+      const receiptNumber = exports.generateReceiptNumber();
+
+      // บันทึกการชำระเงิน (ชำระเต็มจำนวนที่เหลือ)
+      const payment = await tx.payments.create({
+        data: {
+          invoice_receipt_id: parseInt(invoiceId),
+          payment_method: payment_method,
+          payment_amount: remainingAmount,
+          payment_date: new Date(payment_date),
+          payment_note: payment_note,
+          receipt_number: receiptNumber
+        }
+      });
+
+      // อัปเดต status ของใบแจ้งหนี้เป็น 'paid'
+      await tx.invoice_receipts.update({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        },
+        data: {
+          status: "paid",
+          paid_date: new Date(payment_date)
+        }
+      });
+
+      return payment;
+    });
 
     res.json({
       message: "บันทึกการชำระเงินสำเร็จ",
-      payment: paymentResult.rows[0],
+      payment: result,
       remainingAmount: 0,
     });
   } catch (error) {
-    await client.query("ROLLBACK");
     console.error("❌ บันทึกการชำระเงินล้มเหลว:", error);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึกการชำระเงิน" });
-  } finally {
-    client.release();
   }
 };
 
@@ -1058,21 +1201,31 @@ exports.getPaymentHistory = async (req, res) => {
   const { dormId, invoiceId } = req.params;
 
   try {
-
-    const result = await pool.query(
-      `SELECT p.*, i.invoice_number 
-       FROM payments p
-       JOIN invoice_receipts i ON p.invoice_receipt_id = i.invoice_receipt_id
-       WHERE p.invoice_receipt_id = $1 AND i.dorm_id = $2
-       ORDER BY p.payment_date DESC, p.created_at DESC`,
-      [invoiceId, dormId]
-    );
+    const payments = await prisma.payments.findMany({
+      where: {
+        invoice_receipt_id: parseInt(invoiceId),
+        invoice_receipts: {
+          dorm_id: parseInt(dormId)
+        }
+      },
+      include: {
+        invoice_receipts: {
+          select: {
+            invoice_number: true
+          }
+        }
+      },
+      orderBy: [
+        { payment_date: 'desc' },
+        { created_at: 'desc' }
+      ]
+    });
 
     res.json(
-      result.rows.map((payment) => ({
+      payments.map((payment) => ({
         id: payment.payment_id,
-        billNumber: payment.invoice_number,
-        amount: parseFloat(payment.payment_amount),
+        billNumber: payment.invoice_receipts.invoice_number,
+        amount: parseFloat(payment.payment_amount.toString()),
         payment_method: payment.payment_method,
         type: payment.payment_method,
         date: payment.payment_date,
@@ -1093,51 +1246,55 @@ exports.getPaymentHistory = async (req, res) => {
 exports.deletePayment = async (req, res) => {
   const { dormId, invoiceId, paymentId } = req.params;
 
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
+    await prisma.$transaction(async (tx) => {
+      // ตรวจสอบว่าการชำระเงินมีอยู่และเป็นของใบแจ้งหนี้ที่ถูกต้อง
+      const payment = await tx.payments.findFirst({
+        where: {
+          payment_id: parseInt(paymentId),
+          invoice_receipt_id: parseInt(invoiceId),
+          invoice_receipts: {
+            dorm_id: parseInt(dormId)
+          }
+        }
+      });
 
-    // ตรวจสอบว่าการชำระเงินมีอยู่และเป็นของใบแจ้งหนี้ที่ถูกต้อง
-    const paymentResult = await client.query(
-      `SELECT p.* FROM payments p
-       JOIN invoice_receipts i ON p.invoice_receipt_id = i.invoice_receipt_id
-       WHERE p.payment_id = $1 AND p.invoice_receipt_id = $2 AND i.dorm_id = $3`,
-      [paymentId, invoiceId, dormId]
-    );
+      if (!payment) {
+        throw new Error("ไม่พบการชำระเงินที่ระบุ");
+      }
 
-    if (paymentResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "ไม่พบการชำระเงินที่ระบุ" });
-    }
+      // ลบการชำระเงิน
+      await tx.payments.delete({
+        where: {
+          payment_id: parseInt(paymentId)
+        }
+      });
 
-    // ลบการชำระเงิน
-    await client.query("DELETE FROM payments WHERE payment_id = $1", [
-      paymentId,
-    ]);
+      // ตรวจสอบว่ายังมีการชำระเงินอื่นหรือไม่
+      const remainingPaymentsCount = await tx.payments.count({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        }
+      });
 
-    // ตรวจสอบว่ายังมีการชำระเงินอื่นหรือไม่
-    const remainingPayments = await client.query(
-      "SELECT COUNT(*) as count FROM payments WHERE invoice_receipt_id = $1",
-      [invoiceId]
-    );
-
-    // ถ้าไม่มีการชำระเงินเหลืออยู่ ให้เปลี่ยน status กลับเป็น unpaid
-    if (parseInt(remainingPayments.rows[0].count) === 0) {
-      await client.query(
-        "UPDATE invoice_receipts SET status = $1, paid_date = NULL WHERE invoice_receipt_id = $2",
-        ["unpaid", invoiceId]
-      );
-    }
-
-    await client.query("COMMIT");
+      // ถ้าไม่มีการชำระเงินเหลืออยู่ ให้เปลี่ยน status กลับเป็น unpaid
+      if (remainingPaymentsCount === 0) {
+        await tx.invoice_receipts.update({
+          where: {
+            invoice_receipt_id: parseInt(invoiceId)
+          },
+          data: {
+            status: 'unpaid',
+            paid_date: null
+          }
+        });
+      }
+    });
 
     res.json({ message: "ลบการชำระเงินสำเร็จ" });
   } catch (error) {
-    await client.query("ROLLBACK");
     console.error("❌ ลบการชำระเงินล้มเหลว:", error);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการลบการชำระเงิน" });
-  } finally {
-    client.release();
   }
 };
 
@@ -1147,118 +1304,171 @@ exports.getPaymentReceiptsByDorm = async (req, res) => {
     const { dormId } = req.params;
     const { month, year } = req.query;
 
-    // Query สำหรับ payment receipts (ใบเสร็จการชำระบิลรายเดือน)
-    let paymentQuery = `
-      SELECT DISTINCT
-        p.payment_id as id,
-        p.receipt_number as receiptNo,
-        p.payment_date as date,
-        p.payment_amount as amount,
-        p.payment_method as channel,
-        p.payment_note as note,
-        i.invoice_number as invoiceNumber,
-        r.room_number as room,
-        COALESCE(
-          NULLIF(TRIM(CONCAT(t_invoice.first_name, ' ', t_invoice.last_name)), ''),
-          NULLIF(TRIM(CONCAT(t_active.first_name, ' ', t_active.last_name)), ''),
-          NULLIF(TRIM(CONCAT(t_latest.first_name, ' ', t_latest.last_name)), ''),
-          'ไม่ระบุชื่อ'
-        ) as payer,
-        CASE 
-          WHEN p.payment_amount > 0 THEN 'ใบเงินสด'
-          ELSE 'ยกเลิก'
-        END as status,
-        i.invoice_receipt_id as invoiceId,
-        'payment' as receipt_type,
-        p.created_at as created_at
-      FROM payments p
-      JOIN invoice_receipts i ON p.invoice_receipt_id = i.invoice_receipt_id
-      JOIN rooms r ON i.room_id = r.room_id
-      -- ผู้เช่าที่เป็นเจ้าของใบแจ้งหนี้ (ลำดับความสำคัญสูงสุด)
-      LEFT JOIN tenants t_invoice ON i.tenant_id = t_invoice.tenant_id
-      -- ผู้เช่าปัจจุบัน (fallback)
-      LEFT JOIN contracts c_active ON r.room_id = c_active.room_id AND c_active.status = 'active'
-      LEFT JOIN tenants t_active ON c_active.tenant_id = t_active.tenant_id
-      -- ผู้เช่าล่าสุด (fallback สุดท้าย)
-      LEFT JOIN LATERAL (
-        SELECT t.first_name, t.last_name
-        FROM contracts c
-        JOIN tenants t ON c.tenant_id = t.tenant_id
-        WHERE c.room_id = r.room_id
-        ORDER BY c.created_at DESC
-        LIMIT 1
-      ) t_latest ON true
-      WHERE r.dorm_id = $1
-    `;
-
-    // Query สำหรับ move-in receipts (ใบเสร็จค่าเข้าพัก)
-    let moveInQuery = `
-      SELECT 
-        mir.move_in_receipt_id as id,
-        mir.receipt_number as receiptNo,
-        mir.receipt_date as date,
-        mir.total_amount as amount,
-        mir.payment_method as channel,
-        mir.receipt_note as note,
-        'Move-In' as invoiceNumber,
-        rm.room_number as room,
-        CONCAT(t.first_name, ' ', t.last_name) as payer,
-        CASE 
-          WHEN mir.total_amount > 0 THEN 'ใบเงินสด'
-          ELSE 'ยกเลิก'
-        END as status,
-        mir.contract_id as invoiceId,
-        'move_in' as receipt_type,
-        mir.created_at as created_at
-      FROM move_in_receipts mir
-      JOIN contracts c ON mir.contract_id = c.contract_id
-      JOIN tenants t ON c.tenant_id = t.tenant_id
-      JOIN rooms rm ON c.room_id = rm.room_id
-      WHERE rm.dorm_id = $1
-    `;
-
-    const queryParams = [dormId];
-
-    // เพิ่มเงื่อนไขกรองตามเดือน/ปี ถ้ามี
+    // สร้าง date filter สำหรับการกรองตามเดือน/ปี
+    let dateFilter = {};
     if (month && year) {
-      paymentQuery += ` AND EXTRACT(MONTH FROM p.payment_date) = $2 AND EXTRACT(YEAR FROM p.payment_date) = $3`;
-      moveInQuery += ` AND EXTRACT(MONTH FROM mir.receipt_date) = $2 AND EXTRACT(YEAR FROM mir.receipt_date) = $3`;
-      queryParams.push(month, year);
+      const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+      dateFilter = {
+        gte: startDate,
+        lte: endDate
+      };
     } else if (year) {
-      paymentQuery += ` AND EXTRACT(YEAR FROM p.payment_date) = $2`;
-      moveInQuery += ` AND EXTRACT(YEAR FROM mir.receipt_date) = $2`;
-      queryParams.push(year);
+      const startDate = new Date(parseInt(year), 0, 1);
+      const endDate = new Date(parseInt(year), 11, 31, 23, 59, 59, 999);
+      dateFilter = {
+        gte: startDate,
+        lte: endDate
+      };
     }
 
-    // รวม query ทั้งสองแบบด้วย UNION ALL และเรียงลำดับตาม created_at (ล่าสุดไปเก่าสุด)
-    const combinedQuery = `
-      ${paymentQuery}
-      UNION ALL
-      ${moveInQuery}
-      ORDER BY created_at DESC, id DESC
-    `;
+    // ดึงข้อมูล payment receipts (ใบเสร็จการชำระบิลรายเดือน)
+    const paymentReceipts = await prisma.payments.findMany({
+      where: {
+        invoice_receipts: {
+          rooms: {
+            dorm_id: parseInt(dormId)
+          }
+        },
+        ...(Object.keys(dateFilter).length > 0 && {
+          payment_date: dateFilter
+        })
+      },
+      include: {
+        invoice_receipts: {
+          include: {
+            rooms: {
+              select: {
+                room_number: true
+              }
+            },
+            tenants: {
+              select: {
+                first_name: true,
+                last_name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { created_at: 'desc' },
+        { payment_id: 'desc' }
+      ]
+    });
 
-    const result = await pool.query(combinedQuery, queryParams);
+    // ดึงข้อมูล move-in receipts (ใบเสร็จค่าเข้าพัก)
+    const moveInReceipts = await prisma.move_in_receipts.findMany({
+      where: {
+        contracts: {
+          rooms: {
+            dorm_id: parseInt(dormId)
+          }
+        },
+        ...(Object.keys(dateFilter).length > 0 && {
+          receipt_date: dateFilter
+        })
+      },
+      include: {
+        contracts: {
+          include: {
+            tenants: {
+              select: {
+                first_name: true,
+                last_name: true
+              }
+            },
+            rooms: {
+              select: {
+                room_number: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { created_at: 'desc' },
+        { move_in_receipt_id: 'desc' }
+      ]
+    });
+
+    // รวมข้อมูลทั้งสองประเภท
+    const allReceipts = [
+      // Payment receipts
+      ...paymentReceipts.map(payment => {
+        // ค้นหาชื่อผู้เช่า (ใช้ลำดับความสำคัญ: invoice tenant -> active tenant -> fallback)
+        let payerName = 'ไม่ระบุชื่อ';
+        
+        if (payment.invoice_receipts?.tenants) {
+          const tenant = payment.invoice_receipts.tenants;
+          payerName = `${tenant.first_name} ${tenant.last_name}`.trim();
+        }
+        
+        return {
+          id: payment.payment_id,
+          receiptNo: payment.receipt_number,
+          date: payment.payment_date,
+          amount: payment.payment_amount,
+          channel: payment.payment_method,
+          note: payment.payment_note,
+          invoiceNumber: payment.invoice_receipts?.invoice_number,
+          room: payment.invoice_receipts?.rooms?.room_number,
+          payer: payerName,
+          status: parseFloat(payment.payment_amount.toString()) > 0 ? 'ใบเงินสด' : 'ยกเลิก',
+          invoiceId: payment.invoice_receipts?.invoice_receipt_id,
+          receipt_type: 'payment',
+          created_at: payment.created_at
+        };
+      }),
+      // Move-in receipts
+      ...moveInReceipts.map(moveIn => ({
+        id: moveIn.move_in_receipt_id,
+        receiptNo: moveIn.receipt_number,
+        date: moveIn.receipt_date,
+        amount: moveIn.total_amount,
+        channel: moveIn.payment_method,
+        note: moveIn.receipt_note,
+        invoiceNumber: 'Move-In',
+        room: moveIn.contracts?.rooms?.room_number,
+        payer: moveIn.contracts?.tenants ? 
+          `${moveIn.contracts.tenants.first_name} ${moveIn.contracts.tenants.last_name}`.trim() : 
+          'ไม่ระบุชื่อ',
+        status: parseFloat(moveIn.total_amount.toString()) > 0 ? 'ใบเงินสด' : 'ยกเลิก',
+        invoiceId: moveIn.contract_id,
+        receipt_type: 'move_in',
+        created_at: moveIn.created_at
+      }))
+    ];
+
+    // เรียงลำดับตาม created_at (ล่าสุดไปเก่าสุด)
+    const sortedReceipts = allReceipts.sort((a, b) => {
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      if (dateB.getTime() !== dateA.getTime()) {
+        return dateB.getTime() - dateA.getTime();
+      }
+      return b.id - a.id;
+    });
 
     // จัดรูปแบบข้อมูลให้ตรงกับ frontend
-    const receipts = result.rows.map((row) => ({
+    const receipts = sortedReceipts.map((row) => ({
       id: `${row.receipt_type}_${row.id}`, // เพิ่ม prefix เพื่อแยกประเภท
-      receiptNo: row.receiptno || row.receiptNo || "", // รองรับทั้ง lowercase และ camelCase
+      receiptNo: row.receiptNo || "", // รองรับทั้ง lowercase และ camelCase
       paymentDate: new Date(row.date).toLocaleDateString("th-TH", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
       }),
       room: row.room || "",
-      channel: getPaymentChannelText(row.channel),
-      amount: parseFloat(row.amount),
-      totalAmount: parseFloat(row.amount), // เพิ่ม field นี้
-      paidAmount: parseFloat(row.amount), // เพิ่ม field นี้
+      channel: exports.getPaymentChannelText(row.channel),
+      amount: parseFloat(row.amount.toString()),
+      totalAmount: parseFloat(row.amount.toString()), // เพิ่ม field นี้
+      paidAmount: parseFloat(row.amount.toString()), // เพิ่ม field นี้
       status: row.status,
       payer: row.payer,
       note: row.note || "",
-      invoiceNumber: row.invoicenumber,
-      invoiceId: row.invoiceid,
+      invoiceNumber: row.invoiceNumber,
+      invoiceId: row.invoiceId,
       receiptType: row.receipt_type, // เพิ่มข้อมูลประเภทใบเสร็จ
       originalId: row.id, // เก็บ ID ตัวจริงไว้สำหรับการพิมพ์
       createdAt: row.created_at, // เพิ่ม created_at สำหรับการเรียงลำดับใน frontend
@@ -1303,135 +1513,167 @@ exports.deleteUnpaidBills = async (req, res) => {
     return res.status(400).json({ error: "กรุณาระบุรอบบิลที่ต้องการลบ" });
   }
 
-  const client = await pool.connect();
   try {
-    // ตรวจสอบว่าหอพักเป็นของ user ที่ login
-    const ownershipCheck = await client.query(
-      "SELECT dorm_id FROM dormitories WHERE dorm_id = $1 AND user_id = $2",
-      [dormId, user_id]
-    );
+    const result = await prisma.$transaction(async (prisma) => {
+      // ตรวจสอบว่าหอพักเป็นของ user ที่ login
+      const dormitory = await prisma.dormitories.findFirst({
+        where: {
+          dorm_id: parseInt(dormId),
+          user_id: user_id
+        }
+      });
 
-    if (ownershipCheck.rows.length === 0) {
-      return res
-        .status(403)
-        .json({ error: "Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้" });
-    }
+      if (!dormitory) {
+        throw new Error("Access denied: ไม่สามารถเข้าถึงข้อมูลหอพักนี้ได้");
+      }
 
-    await client.query("BEGIN");
+      // ค้นหาบิลค้างชำระในรอบที่ระบุ
+      const unpaidBills = await prisma.invoice_receipts.findMany({
+        where: {
+          dorm_id: parseInt(dormId),
+          bill_month: {
+            gte: new Date(`${month}-01`),
+            lt: new Date(new Date(`${month}-01`).getFullYear(), new Date(`${month}-01`).getMonth() + 1, 1)
+          },
+          status: 'unpaid'
+        },
+        select: {
+          invoice_receipt_id: true,
+          invoice_number: true,
+          rooms: {
+            select: {
+              room_number: true
+            }
+          }
+        }
+      });
 
-    // ค้นหาบิลค้างชำระในรอบที่ระบุ
-    const unpaidBillsResult = await client.query(
-      `SELECT i.invoice_receipt_id, i.invoice_number, r.room_number
-       FROM invoice_receipts i
-       JOIN rooms r ON i.room_id = r.room_id
-       WHERE i.dorm_id = $1 
-       AND DATE_TRUNC('month', i.bill_month) = DATE_TRUNC('month', $2::date)
-       AND i.status = 'unpaid'`,
-      [dormId, month + "-01"]
-    );
+      if (unpaidBills.length === 0) {
+        throw new Error("ไม่พบบิลค้างชำระในรอบที่ระบุ");
+      }
 
-    if (unpaidBillsResult.rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "ไม่พบบิลค้างชำระในรอบที่ระบุ" });
-    }
+      const invoiceIds = unpaidBills.map(bill => bill.invoice_receipt_id);
 
-    const invoiceIds = unpaidBillsResult.rows.map(
-      (row) => row.invoice_receipt_id
-    );
+      // ลบ invoice_items ที่เกี่ยวข้องก่อน (เนื่องจาก foreign key constraint)
+      await prisma.invoice_receipt_items.deleteMany({
+        where: {
+          invoice_receipt_id: {
+            in: invoiceIds
+          }
+        }
+      });
 
-    // ลบ invoice_items ที่เกี่ยวข้องก่อน (เนื่องจาก foreign key constraint)
-    await client.query(
-      `DELETE FROM invoice_receipt_items 
-       WHERE invoice_receipt_id = ANY($1::int[])`,
-      [invoiceIds]
-    );
+      // ลบ invoices
+      const deletedInvoices = await prisma.invoice_receipts.deleteMany({
+        where: {
+          invoice_receipt_id: {
+            in: invoiceIds
+          }
+        }
+      });
 
-    // ลบ invoices
-    const deleteResult = await client.query(
-      `DELETE FROM invoice_receipts 
-       WHERE invoice_receipt_id = ANY($1::int[])
-       RETURNING invoice_receipt_id, invoice_number`,
-      [invoiceIds]
-    );
-
-    await client.query("COMMIT");
+      return {
+        deletedCount: deletedInvoices.count,
+        deletedBills: unpaidBills.map((bill) => ({
+          invoiceNumber: bill.invoice_number,
+          roomNumber: bill.rooms.room_number,
+        }))
+      };
+    });
 
     res.json({
-      message: `ลบบิลค้างชำระสำเร็จ จำนวน ${deleteResult.rows.length} ใบ`,
-      deletedCount: deleteResult.rows.length,
-      deletedBills: unpaidBillsResult.rows.map((row) => ({
-        invoiceNumber: row.invoice_number,
-        roomNumber: row.room_number,
-      })),
+      message: `ลบบิลค้างชำระสำเร็จ จำนวน ${result.deletedCount} ใบ`,
+      deletedCount: result.deletedCount,
+      deletedBills: result.deletedBills,
     });
   } catch (error) {
-    await client.query("ROLLBACK");
     console.error("❌ ลบบิลค้างชำระล้มเหลว:", error);
+    
+    if (error.message.includes("Access denied") || error.message.includes("ไม่พบบิล")) {
+      const statusCode = error.message.includes("Access denied") ? 403 : 404;
+      return res.status(statusCode).json({ error: error.message });
+    }
+    
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการลบบิลค้างชำระ" });
-  } finally {
-    client.release();
   }
 };
 
 // ดึงบิลค้างชำระทั้งหมดของหอพัก
 exports.getPendingInvoicesByDorm = async (req, res) => {
-  const client = await pool.connect();
   try {
     const { dormId } = req.params;
 
-    const query = `
-      SELECT DISTINCT
-        i.invoice_receipt_id,
-        i.invoice_number,
-        i.bill_month as month,
-        i.total as total_amount,
-        i.due_date,
-        i.status,
-        i.created_at,
-        COALESCE(r.room_number, 'ห้อง-' || i.room_id) as room_number,
-        i.room_id,
-        i.tenant_id,
-        COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') as tenant_name,
-        CASE 
-          WHEN i.due_date < CURRENT_DATE THEN CURRENT_DATE - i.due_date
-          ELSE 0
-        END as days_overdue,
-        CASE 
-          WHEN i.due_date < CURRENT_DATE THEN 'overdue'
-          ELSE 'pending'
-        END as bill_status
-      FROM invoice_receipts i
-      LEFT JOIN rooms r ON i.room_id = r.room_id
-      LEFT JOIN tenants t ON i.tenant_id = t.tenant_id
-      WHERE i.dorm_id = $1 
-        AND i.status = 'unpaid'
-      ORDER BY 
-        CASE 
-          WHEN i.due_date < CURRENT_DATE THEN CURRENT_DATE - i.due_date
-          ELSE 0
-        END DESC,
-        i.due_date ASC
-    `;
+    const billsPending = await prisma.invoice_receipts.findMany({
+      where: {
+        dorm_id: parseInt(dormId),
+        status: 'unpaid'
+      },
+      include: {
+        rooms: {
+          select: {
+            room_number: true
+          }
+        },
+        tenants: {
+          select: {
+            first_name: true,
+            last_name: true
+          }
+        }
+      },
+      orderBy: [
+        {
+          due_date: 'asc'
+        }
+      ]
+    });
 
-    const result = await client.query(query, [dormId]);
-    console.log(
-      "📊 Raw pending bills result:",
-      result.rows.length,
-      "bills found"
-    );
-    console.log("📋 Bills data:", result.rows);
+    // จัดรูปแบบข้อมูลและคำนวณสถิติ
+    const formattedBills = billsPending.map(bill => {
+      const daysOverdue = bill.due_date < new Date() 
+        ? Math.ceil((new Date() - bill.due_date) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      return {
+        invoice_receipt_id: bill.invoice_receipt_id,
+        invoice_number: bill.invoice_number,
+        month: bill.bill_month,
+        total_amount: bill.total,
+        due_date: bill.due_date,
+        status: bill.status,
+        created_at: bill.created_at,
+        room_number: bill.rooms?.room_number || `ห้อง-${bill.room_id}`,
+        room_id: bill.room_id,
+        tenant_id: bill.tenant_id,
+        tenant_name: bill.tenants 
+          ? `${bill.tenants.first_name} ${bill.tenants.last_name}`.trim() 
+          : 'ไม่มีผู้เช่า',
+        days_overdue: daysOverdue,
+        bill_status: bill.due_date < new Date() ? 'overdue' : 'pending'
+      };
+    });
+
+    // เรียงลำดับใหม่ตาม days_overdue DESC และ due_date ASC
+    formattedBills.sort((a, b) => {
+      if (a.days_overdue !== b.days_overdue) {
+        return b.days_overdue - a.days_overdue;
+      }
+      return new Date(a.due_date) - new Date(b.due_date);
+    });
+
+    console.log("📊 Raw pending bills result:", formattedBills.length, "bills found");
+    console.log("📋 Bills data:", formattedBills);
 
     // คำนวณสถิติ
-    const bills = result.rows;
     const totalStats = {
-      total: bills.length,
-      pending: bills.filter((bill) => bill.bill_status === "pending").length,
-      overdue: bills.filter((bill) => bill.bill_status === "overdue").length,
-      totalAmount: bills.reduce(
+      total: formattedBills.length,
+      pending: formattedBills.filter((bill) => bill.bill_status === "pending").length,
+      overdue: formattedBills.filter((bill) => bill.bill_status === "overdue").length,
+      totalAmount: formattedBills.reduce(
         (sum, bill) => sum + parseFloat(bill.total_amount),
         0
       ),
-      overdueAmount: bills
+      overdueAmount: formattedBills
         .filter((bill) => bill.bill_status === "overdue")
         .reduce((sum, bill) => sum + parseFloat(bill.total_amount), 0),
     };
@@ -1441,7 +1683,7 @@ exports.getPendingInvoicesByDorm = async (req, res) => {
     res.json({
       success: true,
       data: {
-        bills: bills,
+        bills: formattedBills,
         stats: totalStats,
       },
     });
@@ -1452,50 +1694,81 @@ exports.getPendingInvoicesByDorm = async (req, res) => {
       message: "เกิดข้อผิดพลาดในการดึงข้อมูลบิลค้างชำระ",
       error: error.message,
     });
-  } finally {
-    client.release();
   }
 };
 
 // ดึงบิลทั้งหมดของหอพัก
 exports.getAllInvoicesByDorm = async (req, res) => {
-  const client = await pool.connect();
   try {
     const { dormId } = req.params;
 
-    const query = `
-      SELECT 
-        i.invoice_receipt_id,
-        i.invoice_number,
-        COALESCE(mi.issue_date, i.created_at) as issue_date,
-        COALESCE(mi.month, i.bill_month) as month,
-        i.total as total_amount,
-        i.due_date,
-        i.status,
-        i.created_at,
-        i.paid_date,
-        r.room_number,
-        COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') as tenant_name,
-        t.tenant_id,
-        CASE 
-          WHEN i.due_date < CURRENT_DATE AND i.status = 'unpaid' THEN CURRENT_DATE - i.due_date
-          ELSE 0
-        END as days_overdue,
-        CASE 
-          WHEN i.status = 'paid' THEN 'paid'
-          WHEN i.due_date < CURRENT_DATE AND i.status = 'unpaid' THEN 'overdue'
-          WHEN i.status = 'unpaid' THEN 'pending'
-          ELSE i.status
-        END as bill_status
-      FROM invoice_receipts i
-      JOIN rooms r ON i.room_id = r.room_id
-      LEFT JOIN tenants t ON i.tenant_id = t.tenant_id
-      LEFT JOIN monthly_invoices mi ON i.monthly_invoice_id = mi.monthly_invoice_id
-      WHERE i.dorm_id = $1 
-      ORDER BY i.created_at DESC
-    `;
+    const billsAll = await prisma.invoice_receipts.findMany({
+      where: {
+        dorm_id: parseInt(dormId)
+      },
+      include: {
+        rooms: {
+          select: {
+            room_number: true
+          }
+        },
+        tenants: {
+          select: {
+            tenant_id: true,
+            first_name: true,
+            last_name: true
+          }
+        },
+        monthly_invoices: {
+          select: {
+            issue_date: true,
+            month: true
+          }
+        }
+      },
+      orderBy: [
+        {
+          created_at: 'desc'
+        }
+      ]
+    });
 
-    const result = await client.query(query, [dormId]);
+    // จัดรูปแบบข้อมูลและคำนวณสถิติ
+    const formattedBills = billsAll.map(bill => {
+      const daysOverdue = (bill.due_date < new Date() && bill.status === 'unpaid')
+        ? Math.ceil((new Date() - bill.due_date) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      let billStatus = bill.status;
+      if (billStatus === 'paid') {
+        billStatus = 'paid';
+      } else if (bill.due_date < new Date() && billStatus === 'unpaid') {
+        billStatus = 'overdue';
+      } else if (billStatus === 'unpaid') {
+        billStatus = 'pending';
+      }
+
+      return {
+        invoice_receipt_id: bill.invoice_receipt_id,
+        invoice_number: bill.invoice_number,
+        issue_date: bill.monthly_invoices?.issue_date || bill.created_at,
+        month: bill.monthly_invoices?.month || bill.bill_month,
+        total_amount: bill.total,
+        due_date: bill.due_date,
+        status: bill.status,
+        created_at: bill.created_at,
+        paid_date: bill.paid_date,
+        room_number: bill.rooms.room_number,
+        tenant_name: bill.tenants 
+          ? `${bill.tenants.first_name} ${bill.tenants.last_name}`.trim() 
+          : 'ไม่มีผู้เช่า',
+        tenant_id: bill.tenants?.tenant_id,
+        days_overdue: daysOverdue,
+        bill_status: billStatus
+      };
+    });
+
+    const result = { rows: formattedBills };
 
     // คำนวณสถิติ
     const bills = result.rows;
@@ -1530,8 +1803,6 @@ exports.getAllInvoicesByDorm = async (req, res) => {
       message: "เกิดข้อผิดพลาดในการดึงข้อมูลบิลทั้งหมด",
       error: error.message,
     });
-  } finally {
-    client.release();
   }
 };
 
@@ -1540,84 +1811,79 @@ exports.deleteSingleInvoice = async (req, res) => {
   const { dormId, invoiceId } = req.params;
 
   try {
-    const client = await pool.connect();
-
-    try {
-      await client.query("BEGIN");
-
+    const result = await prisma.$transaction(async (prisma) => {
       // ตรวจสอบว่าใบแจ้งหนี้มีอยู่จริงและเป็นของหอพักที่ระบุ
-      const invoiceCheckQuery = `
-        SELECT ir.invoice_receipt_id, ir.status, r.room_number
-        FROM invoice_receipts ir
-        JOIN rooms r ON ir.room_id = r.room_id
-        WHERE ir.invoice_receipt_id = $1 AND ir.dorm_id = $2
-      `;
+      const invoice = await prisma.invoice_receipts.findFirst({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId),
+          dorm_id: parseInt(dormId)
+        },
+        include: {
+          rooms: {
+            select: {
+              room_number: true
+            }
+          }
+        }
+      });
 
-      const invoiceCheckResult = await client.query(invoiceCheckQuery, [
-        invoiceId,
-        dormId,
-      ]);
-
-      if (invoiceCheckResult.rows.length === 0) {
-        await client.query("ROLLBACK");
-        return res.status(404).json({ error: "ไม่พบใบแจ้งหนี้ที่ระบุ" });
+      if (!invoice) {
+        throw new Error("ไม่พบใบแจ้งหนี้ที่ระบุ");
       }
 
-      const invoice = invoiceCheckResult.rows[0];
-
       // ตรวจสอบว่ามีการชำระเงินแล้วหรือไม่
-      const paymentCheckQuery = `
-        SELECT COUNT(*) as payment_count
-        FROM payments
-        WHERE invoice_receipt_id = $1
-      `;
-
-      const paymentCheckResult = await client.query(paymentCheckQuery, [
-        invoiceId,
-      ]);
-      const paymentCount = parseInt(paymentCheckResult.rows[0].payment_count);
+      const paymentCount = await prisma.payments.count({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        }
+      });
 
       if (paymentCount > 0) {
-        await client.query("ROLLBACK");
-        return res.status(400).json({
-          error: "ไม่สามารถลบใบแจ้งหนี้ที่มีการชำระเงินแล้วได้",
-        });
+        throw new Error("ไม่สามารถลบใบแจ้งหนี้ที่มีการชำระเงินแล้วได้");
       }
 
       // ลบข้อมูลการชำระเงิน (ถ้ามี)
-      await client.query("DELETE FROM payments WHERE invoice_receipt_id = $1", [
-        invoiceId,
-      ]);
+      await prisma.payments.deleteMany({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        }
+      });
 
       // ลบรายการในใบแจ้งหนี้
-      await client.query(
-        "DELETE FROM invoice_receipt_items WHERE invoice_receipt_id = $1",
-        [invoiceId]
-      );
+      await prisma.invoice_receipt_items.deleteMany({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        }
+      });
 
       // ลบใบแจ้งหนี้
-      await client.query(
-        "DELETE FROM invoice_receipts WHERE invoice_receipt_id = $1",
-        [invoiceId]
-      );
-
-      await client.query("COMMIT");
-
-      res.json({
-        message: `ลบใบแจ้งหนี้ห้อง ${invoice.room_number} สำเร็จ`,
-        deletedInvoiceId: invoiceId,
+      await prisma.invoice_receipts.delete({
+        where: {
+          invoice_receipt_id: parseInt(invoiceId)
+        }
       });
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+
+      return {
+        roomNumber: invoice.rooms.room_number,
+        invoiceId: invoiceId
+      };
+    });
+
+    res.json({
+      message: `ลบใบแจ้งหนี้ห้อง ${result.roomNumber} สำเร็จ`,
+      deletedInvoiceId: result.invoiceId,
+    });
   } catch (error) {
     console.error("🔥 Error in deleteSingleInvoice:", error);
-    res
-      .status(500)
-      .json({ error: "เกิดข้อผิดพลาดในการลบใบแจ้งหนี้: " + error.message });
+    
+    if (error.message.includes("ไม่พบใบแจ้งหนี้") || error.message.includes("ไม่สามารถลบ")) {
+      const statusCode = error.message.includes("ไม่พบใบแจ้งหนี้") ? 404 : 400;
+      return res.status(statusCode).json({ error: error.message });
+    }
+    
+    res.status(500).json({ 
+      error: "เกิดข้อผิดพลาดในการลบใบแจ้งหนี้: " + error.message 
+    });
   }
 };
 
@@ -1633,75 +1899,115 @@ exports.sendInvoicesByEmail = async (req, res) => {
     }
 
     // ดึงข้อมูลบิลพร้อมข้อมูลผู้เช่าและหอพัก
-    const invoicesQuery = `
-      SELECT 
-        i.invoice_receipt_id,
-        i.invoice_number,
-        i.total as amount,
-        i.due_date,
-        i.created_at,
-        r.room_number,
-        COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') AS tenant_name,
-        t.email AS tenant_email,
-        t.phone_number AS tenant_phone,
-        t.address AS tenant_address,
-        t.subdistrict AS tenant_subdistrict,
-        t.district AS tenant_district,
-        t.province AS tenant_province,
-        d.name AS dorm_name,
-        d.email AS dorm_email,
-        d.address AS dorm_address,
-        d.phone AS dorm_phone,
-        d.subdistrict AS dorm_subdistrict,
-        d.district AS dorm_district,
-        d.province AS dorm_province
-      FROM invoice_receipts i
-      JOIN rooms r ON i.room_id = r.room_id
-      LEFT JOIN tenants t ON i.tenant_id = t.tenant_id
-      JOIN dormitories d ON i.dorm_id = d.dorm_id
-      WHERE i.invoice_receipt_id = ANY($1::int[])
-        AND i.dorm_id = $2
-        AND i.status = 'unpaid'
-    `;
+    const invoices = await prisma.invoice_receipts.findMany({
+      where: {
+        invoice_receipt_id: {
+          in: bills.map(id => parseInt(id))
+        },
+        dorm_id: parseInt(dormId),
+        status: 'unpaid'
+      },
+      include: {
+        rooms: {
+          select: {
+            room_number: true
+          }
+        },
+        tenants: {
+          select: {
+            first_name: true,
+            last_name: true,
+            email: true,
+            phone_number: true,
+            address: true,
+            subdistrict: true,
+            district: true,
+            province: true
+          }
+        },
+        dormitories: {
+          select: {
+            name: true,
+            email: true,
+            address: true,
+            phone: true,
+            subdistrict: true,
+            district: true,
+            province: true
+          }
+        }
+      }
+    });
 
-    const invoicesResult = await pool.query(invoicesQuery, [bills, dormId]);
-
-    if (invoicesResult.rows.length === 0) {
+    if (invoices.length === 0) {
       return res.status(404).json({ error: "ไม่พบบิลค้างชำระที่ระบุ" });
     }
 
     // ดึงรายการค่าใช้จ่ายของแต่ละบิล
     const invoicesWithItems = await Promise.all(
-      invoicesResult.rows.map(async (invoice) => {
-        const itemsQuery = `
-          SELECT 
-            description,
-            item_type as type,
-            price,
-            unit_count,
-            amount
-          FROM invoice_receipt_items
-          WHERE invoice_receipt_id = $1
-          ORDER BY 
-            CASE item_type
-              WHEN 'rent' THEN 1
-              WHEN 'water' THEN 2
-              WHEN 'electric' THEN 3
-              WHEN 'service' THEN 4
-              WHEN 'discount' THEN 5
-              WHEN 'late_fee' THEN 6
-              ELSE 7
-            END
-        `;
+      invoices.map(async (invoice) => {
+        const items = await prisma.invoice_receipt_items.findMany({
+          where: {
+            invoice_receipt_id: invoice.invoice_receipt_id
+          },
+          orderBy: [
+            {
+              item_type: 'asc'
+            }
+          ],
+          select: {
+            description: true,
+            item_type: true,
+            price: true,
+            unit_count: true,
+            amount: true
+          }
+        });
 
-        const itemsResult = await pool.query(itemsQuery, [
-          invoice.invoice_receipt_id,
-        ]);
+        // เรียงลำดับตาม priority
+        const sortedItems = items.sort((a, b) => {
+          const priority = {
+            'rent': 1,
+            'water': 2,
+            'electric': 3,
+            'service': 4,
+            'discount': 5,
+            'late_fee': 6
+          };
+          return (priority[a.item_type] || 7) - (priority[b.item_type] || 7);
+        });
 
         return {
-          ...invoice,
-          dorm_id: dormId, // เพิ่ม dorm_id
-          invoice_items: itemsResult.rows,
+          invoice_receipt_id: invoice.invoice_receipt_id,
+          invoice_number: invoice.invoice_number,
+          amount: invoice.total,
+          due_date: invoice.due_date,
+          created_at: invoice.created_at,
+          room_number: invoice.rooms.room_number,
+          tenant_name: invoice.tenants 
+            ? `${invoice.tenants.first_name} ${invoice.tenants.last_name}`.trim()
+            : 'ไม่มีผู้เช่า',
+          tenant_email: invoice.tenants?.email,
+          tenant_phone: invoice.tenants?.phone_number,
+          tenant_address: invoice.tenants?.address,
+          tenant_subdistrict: invoice.tenants?.subdistrict,
+          tenant_district: invoice.tenants?.district,
+          tenant_province: invoice.tenants?.province,
+          dorm_name: invoice.dormitories.name,
+          dorm_email: invoice.dormitories.email,
+          dorm_address: invoice.dormitories.address,
+          dorm_phone: invoice.dormitories.phone,
+          dorm_subdistrict: invoice.dormitories.subdistrict,
+          dorm_district: invoice.dormitories.district,
+          dorm_province: invoice.dormitories.province,
+          dorm_id: parseInt(dormId),
+          invoice_items: sortedItems.map(item => ({
+            description: item.description,
+            type: item.item_type,
+            price: item.price,
+            unit_count: item.unit_count,
+            amount: item.amount
+          }))
         };
       })
     );
@@ -1772,40 +2078,69 @@ exports.getBillSendHistory = async (req, res) => {
   const { month } = req.query;
 
   try {
-    let query = `
-      SELECT 
-        bsh.bill_send_history_id,
-        bsh.bill_id,
-        bsh.send_method,
-        bsh.send_to,
-        bsh.send_status,
-        bsh.send_date,
-        bsh.error_message,
-        i.invoice_receipt_id,
-        i.invoice_number,
-        r.room_number,
-        COALESCE(t.first_name || ' ' || t.last_name, 'ไม่มีผู้เช่า') as tenant_name
-      FROM bill_send_history bsh
-      LEFT JOIN invoice_receipts i ON bsh.bill_id = i.invoice_receipt_id
-      LEFT JOIN rooms r ON i.room_id = r.room_id  
-      LEFT JOIN tenants t ON i.tenant_id = t.tenant_id
-      WHERE r.dorm_id = $1
-    `;
-
-    const params = [dormId];
+    const whereConditions = {
+      invoice_receipts: {
+        rooms: {
+          dorm_id: parseInt(dormId)
+        }
+      }
+    };
 
     if (month) {
-      query += ` AND TO_CHAR(i.bill_month, 'YYYY-MM') = $2`;
-      params.push(month);
+      // สร้างช่วงวันที่สำหรับเดือนที่ระบุ
+      const [year, monthNum] = month.split('-');
+      const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+      const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59);
+      
+      whereConditions.invoice_receipts.bill_month = {
+        gte: startDate,
+        lte: endDate
+      };
     }
 
-    query += ` ORDER BY bsh.send_date DESC`;
+    const history = await prisma.bill_send_history.findMany({
+      where: whereConditions,
+      include: {
+        invoice_receipts: {
+          include: {
+            rooms: {
+              select: {
+                room_number: true
+              }
+            },
+            tenants: {
+              select: {
+                first_name: true,
+                last_name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        send_date: 'desc'
+      }
+    });
 
-    const result = await pool.query(query, params);
+    const formattedHistory = history.map(record => ({
+      bill_send_history_id: record.bill_send_history_id,
+      bill_id: record.bill_id,
+      send_method: record.send_method,
+      send_to: record.send_to,
+      send_status: record.send_status,
+      send_date: record.send_date,
+      error_message: record.error_message,
+      invoice_receipt_id: record.invoice_receipts?.invoice_receipt_id,
+      invoice_number: record.invoice_receipts?.invoice_number,
+      room_number: record.invoice_receipts?.rooms?.room_number,
+      tenant_name: record.invoice_receipts?.tenants 
+        ? `${record.invoice_receipts.tenants.first_name} ${record.invoice_receipts.tenants.last_name}`.trim()
+        : 'ไม่มีผู้เช่า'
+    }));
 
     res.json({
       success: true,
-      data: result.rows,
+      data: formattedHistory,
     });
   } catch (error) {
     console.error("❌ ดึงประวัติการส่งบิลล้มเหลว:", error);
@@ -1823,63 +2158,70 @@ exports.getBillsByContract = async (req, res) => {
 
   try {
     // First get the contract details to find room_id and tenant_id
-    const contractResult = await pool.query(
-      `
-      SELECT room_id, tenant_id 
-      FROM contracts 
-      WHERE contract_id = $1
-    `,
-      [contractId]
-    );
+    const contract = await prisma.contracts.findUnique({
+      where: {
+        contract_id: parseInt(contractId)
+      },
+      select: {
+        room_id: true,
+        tenant_id: true
+      }
+    });
 
-    if (contractResult.rows.length === 0) {
+    if (!contract) {
       return res.status(404).json({ error: "ไม่พบสัญญาที่ระบุ" });
     }
 
-    const { room_id, tenant_id } = contractResult.rows[0];
-
     // Get unpaid bills for this contract
-    const result = await pool.query(
-      `
-      SELECT 
-        ir.invoice_receipt_id,
-        ir.invoice_number,
-        ir.bill_month,
-        ir.due_date,
-        ir.total as total_amount,
-        ir.status,
-        r.room_number,
-        d.name as dorm_name,
-        ARRAY_AGG(
-          JSON_BUILD_OBJECT(
-            'item_id', iri.invoice_receipt_item_id,
-            'item_name', iri.description,
-            'item_amount', iri.amount,
-            'item_type', iri.item_type
-          )
-        ) as items
-      FROM invoice_receipts ir
-      JOIN rooms r ON ir.room_id = r.room_id
-      JOIN dormitories d ON r.dorm_id = d.dorm_id
-      LEFT JOIN invoice_receipt_items iri ON ir.invoice_receipt_id = iri.invoice_receipt_id
-      WHERE ir.room_id = $1 
-        AND ir.tenant_id = $2
-        AND ir.status = 'unpaid'
-      GROUP BY 
-        ir.invoice_receipt_id, 
-        ir.invoice_number, 
-        ir.bill_month, 
-        ir.due_date, 
-        ir.total, 
-        ir.status,
-        r.room_number,
-        d.name
-      ORDER BY ir.due_date DESC
-    `,
-      [room_id, tenant_id]
-    );
+    const billsContract = await prisma.invoice_receipts.findMany({
+      where: {
+        room_id: contract.room_id,
+        tenant_id: contract.tenant_id,
+        status: 'unpaid'
+      },
+      include: {
+        rooms: {
+          select: {
+            room_number: true
+          }
+        },
+        dormitories: {
+          select: {
+            name: true
+          }
+        },
+        invoice_receipt_items: {
+          select: {
+            invoice_receipt_item_id: true,
+            description: true,
+            amount: true,
+            item_type: true
+          }
+        }
+      },
+      orderBy: {
+        due_date: 'desc'
+      }
+    });
 
-    res.status(200).json(result.rows);
+    const formattedBills = billsContract.map(bill => ({
+      invoice_receipt_id: bill.invoice_receipt_id,
+      invoice_number: bill.invoice_number,
+      bill_month: bill.bill_month,
+      due_date: bill.due_date,
+      total_amount: bill.total,
+      status: bill.status,
+      room_number: bill.rooms.room_number,
+      dorm_name: bill.dormitories.name,
+      items: bill.invoice_receipt_items.map(item => ({
+        item_id: item.invoice_receipt_item_id,
+        item_name: item.description,
+        item_amount: item.amount,
+        item_type: item.item_type
+      }))
+    }));
+
+    res.status(200).json(formattedBills);
   } catch (error) {
     console.error("Error fetching bills by contract:", error);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงบิลค้างชำระ" });

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { FaPrint, FaFilter, FaTint, FaBolt, FaCalculator } from "react-icons/fa";
-import Pagination from "../../../components/Pagination";
-import ExcelExportButton from "../../../components/ExcelExportButton";
+import Pagination from "../../../components/common/Pagination";
+import ExcelExportButton from "../../../components/common/ExcelExportButton";
 import { RiWaterFlashFill } from "react-icons/ri";
 import axios from 'axios';
 import API_URL from "../../../config/api";

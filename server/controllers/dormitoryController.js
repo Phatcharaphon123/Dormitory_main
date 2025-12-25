@@ -1,9 +1,7 @@
-const pool = require('../db');
+const prisma = require('../config/prisma');
 
-// ➕ เพิ่มหอพัก
+//  เพิ่มหอพัก
 exports.createDorm = async (req, res) => {
-  const client = await pool.connect();
-  
   try {
     const {
       name, phone, email, address,
@@ -30,18 +28,29 @@ exports.createDorm = async (req, res) => {
     const lat = parseFloat(latitude) || 13.736717;
     const lng = parseFloat(longitude) || 100.523186;
 
-    await client.query('BEGIN');
-
     // บันทึกข้อมูลหอพักหลัก พร้อม user_id
-    const dormResult = await client.query(
-      `INSERT INTO dormitories
-        (name, phone, email, image_filename, address, province, district, subdistrict, latitude, longitude, floors, total_rooms, payment_due_day, late_fee_per_day, auto_apply_late_fee, user_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-       RETURNING *`,
-      [name, phone || null, email || null, image_filename, address || null, province || null, district || null, subdistrict || null, lat, lng, floorsNum, totalRoomsNum, paymentDueDayNum, lateFeePerDayNum, autoApplyLateFee, user_id]
-    );
+    const dormitory = await prisma.dormitories.create({
+      data: {
+        name,
+        phone: phone || null,
+        email: email || null,
+        image_filename,
+        address: address || null,
+        province: province || null,
+        district: district || null,
+        subdistrict: subdistrict || null,
+        latitude: lat,
+        longitude: lng,
+        floors: floorsNum,
+        total_rooms: totalRoomsNum,
+        payment_due_day: paymentDueDayNum,
+        late_fee_per_day: lateFeePerDayNum,
+        auto_apply_late_fee: autoApplyLateFee,
+        user_id
+      }
+    });
 
-    const dormitoryId = dormResult.rows[0].dorm_id;
+    const dormitoryId = dormitory.dorm_id;
 
     // สร้างห้องใน rooms ตาม floors_data
     if (floors_data) {
@@ -55,103 +64,131 @@ exports.createDorm = async (req, res) => {
         for (let roomIndex = 1; roomIndex <= floor.room_count; roomIndex++) {
           const roomNumber = `${floor.floor_number}${String(roomIndex).padStart(2, '0')}`;
           
-          await client.query(
-            `INSERT INTO rooms (dorm_id, floor_number, room_number, available)
-             VALUES ($1, $2, $3, $4)`,
-            [dormitoryId, floor.floor_number, roomNumber, true]
-          );
+          await prisma.rooms.create({
+            data: {
+              dorm_id: dormitoryId,
+              floor_number: floor.floor_number,
+              room_number: roomNumber,
+              available: true
+            }
+          });
           
           console.log(`🏠 สร้างห้อง ${roomNumber}`);
         }
       }
     }
-
-    await client.query('COMMIT');
     
     res.status(201).json({
       message: 'เพิ่มหอพักสำเร็จ',
-      dormitory: dormResult.rows[0],
+      dormitory: dormitory,
       dorm_id: dormitoryId
     });
 
   } catch (err) {
-    await client.query('ROLLBACK');
     console.error('Error creating dorm:', err);
     res.status(500).json({ error: 'Insert failed: ' + err.message });
-  } finally {
-    client.release();
   }
 };
 
-// 📥 ดึงหอพักทั้งหมด (เฉพาะของ user ที่ login)
+//  ดึงหอพักทั้งหมด (เฉพาะของ user ที่ login)
 exports.getAllDorms = async (req, res) => {
   try {
     const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
-    const result = await pool.query(
-      "SELECT * FROM dormitories WHERE user_id = $1 ORDER BY created_at DESC", 
-      [user_id]
-    );
-    res.json(result.rows);
+    const dormitories = await prisma.dormitories.findMany({
+      where: {
+        user_id: user_id
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+    res.json(dormitories);
   } catch (err) {
     console.error("Error fetching dorms", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-// 📥 ดึงหอพักทั้งหมดพร้อมสถิติจากข้อมูลจริงในตาราง rooms (เฉพาะของ user ที่ login)
+// ดึงหอพักทั้งหมดพร้อมสถิติจากข้อมูลจริงในตาราง rooms (เฉพาะของ user ที่ login)
 exports.getAllDormsWithStats = async (req, res) => {
   try {
     const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
-    const result = await pool.query(`
-      SELECT 
-        d.*,
-        COALESCE(MAX(r.floor_number), 0) as actual_floors,
-        COUNT(r.room_id) as actual_total_rooms,
-        COUNT(CASE WHEN r.available = true THEN 1 END) as available_rooms
-      FROM dormitories d
-      LEFT JOIN rooms r ON d.dorm_id = r.dorm_id
-      WHERE d.user_id = $1
-      GROUP BY d.dorm_id
-      ORDER BY d.created_at DESC
-    `, [user_id]);
-    res.json(result.rows);
+    const dormitories = await prisma.dormitories.findMany({
+      where: {
+        user_id: user_id
+      },
+      include: {
+        rooms: {
+          select: {
+            floor_number: true,
+            available: true
+          }
+        }
+      },
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    // คำนวณสถิติของแต่ละหอพัก
+    const dormsWithStats = dormitories.map(dorm => {
+      const rooms = dorm.rooms;
+      const actual_floors = rooms.length > 0 ? Math.max(...rooms.map(r => r.floor_number)) : 0;
+      const actual_total_rooms = rooms.length;
+      const available_rooms = rooms.filter(r => r.available).length;
+
+      return {
+        ...dorm,
+        actual_floors,
+        actual_total_rooms,
+        available_rooms,
+        rooms: undefined // ไม่ส่ง rooms data กลับไป
+      };
+    });
+    
+    res.json(dormsWithStats);
   } catch (err) {
     console.error("Error fetching dorms with stats", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-// 📥 ดึงหอพักตาม ID พร้อมข้อมูลชั้น (จากตาราง rooms) - ตรวจสอบ ownership
+//  ดึงหอพักตาม ID พร้อมข้อมูลชั้น (จากตาราง rooms) - ตรวจสอบ ownership
 exports.getDormById = async (req, res) => {
-  const dormId = req.params.id;
+  const dormId = parseInt(req.params.id);
   const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
   
   try {
     // ดึงข้อมูลหอพักหลัก และตรวจสอบว่าเป็นของ user ที่ login
-    const dormResult = await pool.query(
-      "SELECT * FROM dormitories WHERE dorm_id = $1 AND user_id = $2", 
-      [dormId, user_id]
-    );
+    const dormitory = await prisma.dormitories.findFirst({
+      where: {
+        dorm_id: dormId,
+        user_id: user_id
+      }
+    });
     
-    if (dormResult.rows.length === 0)
+    if (!dormitory)
       return res.status(404).json({ error: "Dorm not found or access denied" });
 
     // ดึงข้อมูลชั้นจากตาราง rooms
-    const floorsResult = await pool.query(`
-      SELECT 
-        floor_number,
-        COUNT(*) as room_count
-      FROM rooms 
-      WHERE dorm_id = $1 
-      GROUP BY floor_number 
-      ORDER BY floor_number
-    `, [dormId]);
+    const floorsData = await prisma.rooms.groupBy({
+      by: ['floor_number'],
+      where: {
+        dorm_id: dormId
+      },
+      _count: {
+        floor_number: true
+      },
+      orderBy: {
+        floor_number: 'asc'
+      }
+    });
 
     const dormData = {
-      ...dormResult.rows[0],
-      floors_data: floorsResult.rows.map(floor => ({
+      ...dormitory,
+      floors_data: floorsData.map(floor => ({
         floor_number: floor.floor_number,
-        room_count: parseInt(floor.room_count)
+        room_count: floor._count.floor_number
       }))
     };
 
@@ -162,57 +199,51 @@ exports.getDormById = async (req, res) => {
   }
 };
 
-// ✏️ แก้ไขหอพัก - ตรวจสอบ ownership
+//  แก้ไขหอพัก - ตรวจสอบ ownership
 exports.updateDorm = async (req, res) => {
   const d = req.body || {};
   const imageFilename = req.files?.image?.[0]?.filename || d?.image_filename || null;
   const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
+  const dormId = parseInt(req.params.id);
   
   try {
-    const result = await pool.query(`
-      UPDATE dormitories SET
-        name = $1,
-        phone = $2,
-        email = $3,
-        image_filename = COALESCE($4, image_filename),
-        address = $5,
-        province = $6,
-        district = $7,
-        subdistrict = $8,
-        latitude = $9,
-        longitude = $10,
-        floors = COALESCE(CAST(NULLIF($11, '') AS INTEGER), floors),
-        total_rooms = COALESCE(CAST(NULLIF($12, '') AS INTEGER), total_rooms),
-        payment_due_day = COALESCE(CAST(NULLIF($13, '') AS INTEGER), payment_due_day),
-        late_fee_per_day = COALESCE(CAST(NULLIF($14, '') AS NUMERIC), late_fee_per_day),
-        auto_apply_late_fee = COALESCE($15, auto_apply_late_fee),
-        updated_at = NOW()
-      WHERE dorm_id = $16 AND user_id = $17
-      RETURNING *
-    `, [
-      d.name,
-      d.phone,
-      d.email,
-      imageFilename,
-      d.address,
-      d.province,
-      d.district,
-      d.subdistrict,
-      d.latitude,
-      d.longitude,
-      d.floors ?? '',
-      d.total_rooms ?? '',
-      d.payment_due_day ?? '',
-      d.late_fee_per_day ?? '',
-      d.auto_apply_late_fee,
-      req.params.id,
-      user_id
-    ]);
+    // ตรวจสอบว่าหอพักมีอยู่และเป็นของ user ที่ login
+    const existingDorm = await prisma.dormitories.findFirst({
+      where: {
+        dorm_id: dormId,
+        user_id: user_id
+      }
+    });
 
-    if (result.rows.length === 0)
+    if (!existingDorm)
       return res.status(404).json({ error: "Dorm not found or access denied" });
 
-    res.json(result.rows[0]);
+    // อัปเดตข้อมูล
+    const updatedDorm = await prisma.dormitories.update({
+      where: {
+        dorm_id: dormId
+      },
+      data: {
+        name: d.name || existingDorm.name,
+        phone: d.phone || existingDorm.phone,
+        email: d.email || existingDorm.email,
+        image_filename: imageFilename || existingDorm.image_filename,
+        address: d.address || existingDorm.address,
+        province: d.province || existingDorm.province,
+        district: d.district || existingDorm.district,
+        subdistrict: d.subdistrict || existingDorm.subdistrict,
+        latitude: d.latitude !== undefined ? parseFloat(d.latitude) : existingDorm.latitude,
+        longitude: d.longitude !== undefined ? parseFloat(d.longitude) : existingDorm.longitude,
+        floors: d.floors ? parseInt(d.floors) : existingDorm.floors,
+        total_rooms: d.total_rooms ? parseInt(d.total_rooms) : existingDorm.total_rooms,
+        payment_due_day: d.payment_due_day ? parseInt(d.payment_due_day) : existingDorm.payment_due_day,
+        late_fee_per_day: d.late_fee_per_day ? parseFloat(d.late_fee_per_day) : existingDorm.late_fee_per_day,
+        auto_apply_late_fee: d.auto_apply_late_fee !== undefined ? d.auto_apply_late_fee : existingDorm.auto_apply_late_fee,
+        updated_at: new Date()
+      }
+    });
+
+    res.json(updatedDorm);
   } catch (err) {
     console.error("Update error:", err);
     res.status(500).json({ error: "Update failed" });

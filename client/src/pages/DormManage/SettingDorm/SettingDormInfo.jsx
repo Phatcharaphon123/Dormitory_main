@@ -18,6 +18,7 @@ import amphures from "../../../assets/data/api_amphure.json";
 import tambons from "../../../assets/data/thai_tambons.json";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import API_URL from "../../../config/api";
 
 // ตั้งค่า icon สำหรับ leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -91,7 +92,7 @@ function SettingDormInfo() {
     const fetchDorm = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:3001/api/dormitories/${dormId}`, {
+        const response = await axios.get(`${API_URL}/api/dormitories/${dormId}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -291,7 +292,7 @@ function SettingDormInfo() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(`http://localhost:3001/api/dormitories/${dormId}`, data, {
+      const response = await axios.put(`${API_URL}/api/dormitories/${dormId}`, data, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -470,7 +471,7 @@ function SettingDormInfo() {
                   <div className="mt-3">
                     <p className="text-sm text-gray-600">รูปเดิม:</p>
                     <img
-                      src={`http://localhost:3001/uploads/${formData.image_filename}`}
+                      src={`${API_URL}/uploads/${formData.image_filename}`}
                       alt="รูปเดิม"
                       className="w-full max-w-[250px] h-40 object-cover rounded-md border"
                     />

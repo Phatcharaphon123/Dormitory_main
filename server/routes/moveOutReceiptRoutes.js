@@ -9,19 +9,13 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 /* ─────────────── 🔹 ใบเสร็จย้ายออก ─────────────── */
 
-// ดึงใบเสร็จย้ายออกตาม ID
-router.get('/:moveOutReceiptId', authMiddleware, getMoveOutReceiptById);
-
-// Route สำหรับทดสอบ
-router.get('/test', (req, res) => {
-  console.log('🔥 Test route hit!');
-  res.json({ message: 'Test route works!' });
-});
-
-// ดึงใบเสร็จย้ายออกตามเดือน
+// ดึงใบเสร็จย้ายออกตามเดือน (ต้องมาก่อน /:moveOutReceiptId)
 router.get('/dormitories/:dormId', authMiddleware, getMoveOutReceiptsByMonth);
 
 // ดึงข้อมูลใบเสร็จย้ายออกตามห้อง
 router.get('/dormitories/:dormId/rooms/:roomNumber', authMiddleware, getMoveOutReceiptData);
+
+// ดึงใบเสร็จย้ายออกตาม ID (ต้องมาหลังสุดเพราะเป็น generic route)
+router.get('/:moveOutReceiptId', authMiddleware, getMoveOutReceiptById);
 
 module.exports = router;

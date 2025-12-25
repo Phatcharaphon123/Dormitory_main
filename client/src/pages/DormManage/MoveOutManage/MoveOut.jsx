@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BiMessageSquareDetail } from "react-icons/bi";
 import { FaSearch, FaFilter,FaUser, FaHome, FaPhone, FaCalendarAlt, FaCheck} from 'react-icons/fa';
-import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
-import Pagination from '../../../components/Pagination';
-import ExcelExportButton from '../../../components/ExcelExportButton';
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
+import Pagination from "../../../components/common/Pagination";
+import ExcelExportButton from "../../../components/common/ExcelExportButton";
 import { BsPersonFillX } from "react-icons/bs";
 import API_URL from '../../../config/api';
 

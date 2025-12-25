@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Pagination from "../../../components/Pagination";
-import ExcelExportButton from "../../../components/ExcelExportButton";
+import Pagination from "../../../components/common/Pagination";
+import ExcelExportButton from "../../../components/common/ExcelExportButton";
 import { HiNewspaper } from "react-icons/hi2";
 import axios from 'axios';
 import API_URL from '../../../config/api';

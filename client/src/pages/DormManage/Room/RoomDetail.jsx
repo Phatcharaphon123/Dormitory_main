@@ -165,23 +165,6 @@ function RoomDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-blue-600 p-4 flex items-center space-x-3 shadow-md px-6">
-        <FaHome className="text-white text-xl" />
-        <h2 className="text-lg text-white font-semibold">
-          รายละเอียดห้อง: {roomData?.number || 'ไม่ระบุ'}
-        </h2>
-        <span className="text-blue-200 text-sm">
-          ชั้น {roomData?.floor_number || '-'}
-        </span>
-        <button
-          onClick={() => navigate(-1)}
-          className="ml-auto bg-blue-500 hover:bg-blue-400 text-white px-3 py-1 rounded-md text-sm"
-        >
-          กลับ
-        </button>
-      </nav>
-
       <div className="container mx-auto p-6  max-w-7xl">
         {/* Room Details Section */}
         <section className="mb-4 bg-white border border-gray-300 shadow rounded-md overflow-hidden">

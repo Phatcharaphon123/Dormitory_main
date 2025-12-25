@@ -173,7 +173,7 @@ function RealTimeMeter() {
           if (!measurement) return null;
           
           // ดึงข้อมูลล่าสุดจาก InfluxDB
-          const response = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const response = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: measurement
           }, {
             headers: { 
@@ -289,7 +289,7 @@ function RealTimeMeter() {
           const measurement = room.waterMeterCode || room.electricMeterCode;
           if (!measurement) return null;
           
-          const response = await axios.post('http://localhost:3001/api/influx/latest-data', {
+          const response = await axios.post(`${API_URL}/api/influx/latest-data`, {
             measurement: measurement
           }, {
             headers: { 
