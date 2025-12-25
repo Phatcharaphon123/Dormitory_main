@@ -269,13 +269,6 @@ exports.createInvoices = async (req, res) => {
         const monthlyInvoiceId = monthlyInvoice.monthly_invoice_id;
 
       for (const room of rooms) {
-        console.log('🏠 Processing room:', {
-          roomNumber: room.room_number,
-          roomId: room.roomId || room.room_id,
-          tenantId: room.tenantId || room.tenant_id,
-          roomRate: room.roomRate || room.room_rate,
-          waterUsage: room.waterUsage || room.water_usage
-        });
 
         // ตรวจสอบข้อมูลห้อง (รองรับทั้ง camelCase และ snake_case)
         const roomId = room.roomId || room.room_id;
@@ -421,7 +414,6 @@ exports.createInvoices = async (req, res) => {
       }
     });
 
-    console.log('✅ All invoices created successfully');
     res.status(201).json({ message: "สร้างใบแจ้งหนี้สำเร็จแล้ว" });
   } catch (error) {
     console.error("❌ createInvoices error:", error);
