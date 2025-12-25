@@ -17,7 +17,7 @@ const SidebarMain = () => {
   // State สำหรับ User
   const [currentUser, setCurrentUser] = useState({
     name: "Loading...",
-    role: "OWNERDORM"
+    role: "OWNER"
   });
 
   // State สำหรับจัดการ Submenu (เพิ่มมาเพื่อให้รองรับอนาคต)

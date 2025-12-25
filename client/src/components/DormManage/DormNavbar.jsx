@@ -1,47 +1,18 @@
 import { TbLogout2 } from "react-icons/tb";
 import { LuClock10 } from "react-icons/lu";
 import { useState, useEffect, useRef } from "react";
+import Swal from "sweetalert2";
 import { IoPersonCircle } from "react-icons/io5";
 import { useNavigate, useParams } from "react-router-dom"; // เพิ่ม useParams
 import { useAuth } from "../../contexts/AuthContext";
 import API_URL from '../../config/api';
 
-// Component สำหรับ Logout Confirmation Popup
-function LogoutConfirmPopup({ isOpen, onClose, onConfirm }) {
-  if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[99] bg-[rgba(0,0,0,0.6)] flex items-center justify-center">
-      <div className="bg-white border border-gray-400 rounded-lg shadow-lg w-[90%] md:w-[400px] p-6 z-50">
-        <h2 className="text-2xl text-center font-bold text-[#d50000] mb-4 flex items-center justify-center gap-2">
-          <TbLogout2 size={22} />
-          ยืนยันการออกจากระบบ
-        </h2>
-        <p className="text-gray-700 mb-6 text-center text-base">คุณต้องการออกจากระบบใช่หรือไม่?</p>
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300 transition-colors"
-          >
-            ยกเลิก
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-5 py-2 bg-[#d50000] text-white rounded-md  hover:bg-[#b71c1c] transition-colors flex items-center gap-2"
-          >
-            ออกจากระบบ
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function DormNavbar() {
   const [dateTime, setDateTime] = useState(new Date());
   const [dormName, setDormName] = useState(""); // state สำหรับชื่อหอ
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const { dormId } = useParams(); // ดึง dormId จาก URL
@@ -102,20 +73,25 @@ function DormNavbar() {
     }).format(date);
   };
 
-  // ฟังก์ชันออกจากระบบ
+  // ฟังก์ชันออกจากระบบ (ใช้ SweetAlert2)
   const handleLogoutClick = () => {
-    setShowLogoutPopup(true);
     setDropdownOpen(false);
-  };
-
-  const handleConfirmLogout = () => {
-    logout();
-    navigate("/login");
-    setShowLogoutPopup(false);
-  };
-
-  const handleCloseLogoutPopup = () => {
-    setShowLogoutPopup(false);
+    Swal.fire({
+      title: 'ยืนยันการออกจากระบบ',
+      text: 'คุณต้องการออกจากระบบใช่หรือไม่?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d50000',
+      cancelButtonColor: '#aaa',
+      confirmButtonText: 'ออกจากระบบ',
+      cancelButtonText: 'ยกเลิก',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        logout();
+        navigate("/login");
+      }
+    });
   };
 
   return (
@@ -128,18 +104,11 @@ function DormNavbar() {
         {/* ชื่อหอพักตรงกลาง */}
         <div className="flex-1 flex justify-center items-center">
           <span className="text-blue-900 font-bold text-lg truncate max-w-xs text-center">
-            หอพัก: {dormName || "..."}
+            หอพัก: {dormName || "loading..."}
           </span>
         </div>
         {/* ส่วนขวา: Profile Dropdown และปุ่มกลับหน้าหลัก */}
         <div className="ml-auto flex items-center gap-2 relative">
-          <button
-            onClick={() => navigate("/youdorm")}
-            className="flex gap-1 items-center px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-md border border-gray-600"
-          >
-            <TbLogout2 size={15} />
-            <span>กลับไปหน้าหลัก</span>
-          </button>
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
@@ -183,12 +152,7 @@ function DormNavbar() {
             )}
           </div>
         </div>
-        {/* Logout Confirmation Popup */}
-        <LogoutConfirmPopup 
-          isOpen={showLogoutPopup}
-          onClose={handleCloseLogoutPopup}
-          onConfirm={handleConfirmLogout}
-        />
+        {/* Logout Confirmation Popup ถูกแทนที่ด้วย SweetAlert2 */}
       </div>
     </header>
   );

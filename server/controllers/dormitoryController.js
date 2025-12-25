@@ -156,19 +156,16 @@ exports.getAllDormsWithStats = async (req, res) => {
 //  ดึงหอพักตาม ID พร้อมข้อมูลชั้น (จากตาราง rooms) - ตรวจสอบ ownership
 exports.getDormById = async (req, res) => {
   const dormId = parseInt(req.params.id);
-  const user_id = req.user.user_id; // ใช้ user_id จาก JWT token
-  
   try {
-    // ดึงข้อมูลหอพักหลัก และตรวจสอบว่าเป็นของ user ที่ login
     const dormitory = await prisma.dormitories.findFirst({
       where: {
-        dorm_id: dormId,
-        user_id: user_id
+        dorm_id: dormId
       }
     });
-    
-    if (!dormitory)
-      return res.status(404).json({ error: "Dorm not found or access denied" });
+
+    if (!dormitory) {
+      return res.status(404).json({ error: "Dorm not found" });
+    }
 
     // ดึงข้อมูลชั้นจากตาราง rooms
     const floorsData = await prisma.rooms.groupBy({

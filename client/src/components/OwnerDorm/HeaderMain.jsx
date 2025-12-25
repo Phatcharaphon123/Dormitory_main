@@ -3,29 +3,12 @@ import { IoPersonCircle } from "react-icons/io5";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-import API_URL from "../../config/api";
+import { useAuth } from '../../contexts/AuthContext';
+
 
 const HeaderMain = () => {
   const [currentTime, setCurrentTime] = useState('');
-  const [userName, setUserName] = useState("Loading...");
-  useEffect(() => {
-    const fetchUserName = async () => {
-      const token = localStorage.getItem("token");
-      try {
-        const res = await axios.get(`${API_URL}/api/infoownerdorm`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log(res.data); 
-        setUserName(res.data.username);
-      } catch (err) {
-        setUserName("ไม่พบชื่อผู้ใช้");
-      }
-    };
-    fetchUserName();
-  }, []);
-
+  const { user } = useAuth();
   useEffect(() => {
     const updateTime = () => {
       const date = new Date();
@@ -47,7 +30,8 @@ const HeaderMain = () => {
   const handleLogout = async () => {
     const result = await Swal.fire({
       icon: "warning",
-      title: "คุณต้องการออกจากระบบหรือไม่?",
+      title: 'ยืนยันการออกจากระบบ',
+      text: 'คุณต้องการออกจากระบบใช่หรือไม่?',
       showCancelButton: true,
       confirmButtonText: "ออกจากระบบ",
       cancelButtonText: "ยกเลิก",
@@ -86,7 +70,7 @@ const HeaderMain = () => {
                 isOpen ? "bg-white/35" : "hover:bg-white/35"
               }`}
             >
-              {userName} <IoPersonCircle size={40} />
+              {user.username || "Loading..."} <IoPersonCircle size={40} />
             </button>
 
             {/* 3. ตัว Popup Dropdown (แสดงเมื่อ isOpen = true) */}
