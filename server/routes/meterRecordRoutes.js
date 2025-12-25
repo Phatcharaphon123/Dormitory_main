@@ -8,26 +8,26 @@ const {
   updateMeterRecordById,
   deleteMeterRecordById
 } = require('../controllers/meterRecordController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 /* ─────────────── 🔹 บันทึกมิเตอร์ ─────────────── */
 
 // ดึงห้องพร้อมข้อมูลมิเตอร์ล่าสุด
-router.get('/dormitories/:dormId/rooms-with-meter', authMiddleware, getRoomsWithLatestMeter);
+router.get('/dormitories/:dormId/rooms-with-meter', authCheck, staffCheck, getRoomsWithLatestMeter);
 
 // สร้างบันทึกมิเตอร์ใหม่
-router.post('/dormitories/:dormId', authMiddleware, createMeterRecord);
+router.post('/dormitories/:dormId', authCheck, staffCheck, createMeterRecord);
 
 // ดึงบันทึกมิเตอร์ทั้งหมด
-router.get('/dormitories/:dormId/all', authMiddleware, getMeterRecords);
+router.get('/dormitories/:dormId/all', authCheck, staffCheck, getMeterRecords);
 
 // ดึงบันทึกมิเตอร์ตาม ID
-router.get('/dormitories/:dormId/:recordId', authMiddleware, getMeterRecordById);
+router.get('/dormitories/:dormId/:recordId', authCheck, staffCheck, getMeterRecordById);
 
 // แก้ไขบันทึกมิเตอร์
-router.put('/dormitories/:dormId/:recordId', authMiddleware, updateMeterRecordById);
+router.put('/dormitories/:dormId/:recordId', authCheck, staffCheck, updateMeterRecordById);
 
 // ลบบันทึกมิเตอร์
-router.delete('/dormitories/:dormId/:recordId', authMiddleware, deleteMeterRecordById);
+router.delete('/dormitories/:dormId/:recordId', authCheck, staffCheck, deleteMeterRecordById);
 
 module.exports = router;

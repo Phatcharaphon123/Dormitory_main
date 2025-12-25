@@ -7,23 +7,23 @@ const {
   removeElectricMeter,
   removeWaterMeter
 } = require('../controllers/meterController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 /* ─────────────── 🔹 จัดการมิเตอร์ ─────────────── */
 
 // ดึงมิเตอร์ทั้งหมดตามหอพัก
-router.get('/dormitories/:dormId', authMiddleware, getDormMeters);
+router.get('/dormitories/:dormId', authCheck, staffCheck, getDormMeters);
 
 // เพิ่มมิเตอร์ไฟฟ้า
-router.post('/electric', authMiddleware, addElectricMeter);
+router.post('/electric', authCheck, staffCheck, addElectricMeter);
 
 // เพิ่มมิเตอร์น้ำ
-router.post('/water', authMiddleware, addWaterMeter);
+router.post('/water', authCheck, staffCheck, addWaterMeter);
 
 // ลบมิเตอร์ไฟฟ้า
-router.delete('/electric/:roomId', authMiddleware, removeElectricMeter);
+router.delete('/electric/:roomId', authCheck, staffCheck, removeElectricMeter);
 
 // ลบมิเตอร์น้ำ
-router.delete('/water/:roomId', authMiddleware, removeWaterMeter);
+router.delete('/water/:roomId', authCheck, staffCheck, removeWaterMeter);
 
 module.exports = router;

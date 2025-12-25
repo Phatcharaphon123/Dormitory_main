@@ -4,14 +4,14 @@ const {
   updateRoomAvailability,
   fixRoomStatus
 } = require('../controllers/roomStatusController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 /* ─────────────── 🔹 สถานะห้อง ─────────────── */
 
 // อัปเดตสถานะการว่างของห้องทั้งหมด
-router.put('/:dormId/update-all', authMiddleware, updateRoomAvailability);
+router.put('/:dormId/update-all', authCheck, staffCheck, updateRoomAvailability);
 
 // แก้ไขสถานะห้องเฉพาะห้อง
-router.put('/:dormId/rooms/:roomNumber/fix', authMiddleware, fixRoomStatus);
+router.put('/:dormId/rooms/:roomNumber/fix', authCheck, staffCheck, fixRoomStatus);
 
 module.exports = router;

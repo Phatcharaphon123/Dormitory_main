@@ -8,25 +8,25 @@ const {
   getYearlyUtilityData,
   getDailyUtilityData
 } = require('../controllers/utilityController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 /* ─────────────── 🔹 อัตราสาธารณูปโภค ─────────────── */
 // ดึงอัตราสาธารณูปโภค
-router.get('/dormitories/:dormId/rates', authMiddleware, getUtilityRates);
+router.get('/dormitories/:dormId/rates', authCheck, staffCheck, getUtilityRates);
 
 // บันทึกอัตราสาธารณูปโภค
-router.post('/dormitories/:dormId/rates', authMiddleware, upsertUtilityRates);
+router.post('/dormitories/:dormId/rates', authCheck, staffCheck, upsertUtilityRates);
 
 /* ─────────────── 📊 การวิเคราะห์สาธารณูปโภค ─────────────── */
 // ดึงสรุปการใช้สาธารณูปโภค
-router.get('/dormitories/:dormId/analytics/summary', authMiddleware, getUtilitySummary);
+router.get('/dormitories/:dormId/analytics/summary', authCheck, staffCheck, getUtilitySummary);
 // ดึงข้อมูลสาธารณูปโภครายเดือน
-router.get('/dormitories/:dormId/analytics/monthly', authMiddleware, getMonthlyUtilityData);
+router.get('/dormitories/:dormId/analytics/monthly', authCheck, staffCheck, getMonthlyUtilityData);
 
 // ดึงข้อมูลสาธารณูปโภครายปี
-router.get('/dormitories/:dormId/analytics/yearly', authMiddleware, getYearlyUtilityData);
+router.get('/dormitories/:dormId/analytics/yearly', authCheck, staffCheck, getYearlyUtilityData);
 
 // ดึงข้อมูลสาธารณูปโภครายวัน
-router.get('/dormitories/:dormId/analytics/daily', authMiddleware, getDailyUtilityData);
+router.get('/dormitories/:dormId/analytics/daily', authCheck, staffCheck, getDailyUtilityData);
 
 module.exports = router;

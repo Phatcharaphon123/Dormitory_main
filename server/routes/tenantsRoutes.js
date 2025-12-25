@@ -8,23 +8,23 @@ const {
   getRoomTypes,
   getContractStatus
 } = require('../controllers/tenantsController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 /* ─────────────── 🔹 ผู้เช่า ─────────────── */
 // ดึงข้อมูลผู้เช่าแบบเต็ม
-router.get('/:tenantId/full', authMiddleware, getTenantFullById);
+router.get('/:tenantId/full', authCheck, staffCheck, getTenantFullById);
 // แก้ไขข้อมูลผู้เช่า
-router.put('/:tenantId', authMiddleware, updateTenant);
+router.put('/:tenantId', authCheck, staffCheck, updateTenant);
 
 /* ─────────────── 📊 แดชบอร์ดผู้เช่า ─────────────── */
 // ดึงสรุปข้อมูลผู้เช่า
-router.get('/dormitories/:dormId/summary', authMiddleware, getTenantSummary);
+router.get('/dormitories/:dormId/summary', authCheck, staffCheck, getTenantSummary);
 // ดึงอัตราการเข้าพักรายเดือน
-router.get('/dormitories/:dormId/occupancy', authMiddleware, getMonthlyOccupancy);
+router.get('/dormitories/:dormId/occupancy', authCheck, staffCheck, getMonthlyOccupancy);
 // ดึงประเภทห้อง
-router.get('/dormitories/:dormId/room-types', authMiddleware, getRoomTypes);
+router.get('/dormitories/:dormId/room-types', authCheck, staffCheck, getRoomTypes);
 // ดึงสถานะสัญญา
-router.get('/dormitories/:dormId/contracts/status', authMiddleware, getContractStatus);
+router.get('/dormitories/:dormId/contracts/status', authCheck, staffCheck, getContractStatus);
 
 module.exports = router;
 

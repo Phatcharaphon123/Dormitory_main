@@ -12,30 +12,30 @@ const {
   bulkUpdateRooms,
   deleteMultipleRooms
 } = require('../controllers/roomController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 /* ─────────────── 🔹 จัดการชั้น ─────────────── */
 // ดึงชั้นทั้งหมดของหอพัก
-router.get("/dormitories/:dormId/floors", authMiddleware, getDormFloors);
+router.get("/dormitories/:dormId/floors", authCheck, staffCheck, getDormFloors);
 // แก้ไขชั้นของหอพัก
-router.put("/dormitories/:dormId/floors", authMiddleware, updateDormFloors);
+router.put("/dormitories/:dormId/floors", authCheck, staffCheck, updateDormFloors);
 
 /* ─────────────── 🔹 จัดการห้อง ─────────────── */
 // ดึงห้องทั้งหมดของหอพัก
-router.get("/dormitories/:dormId", authMiddleware, getDormRooms);
+router.get("/dormitories/:dormId", authCheck, staffCheck, getDormRooms);
 // ดึงห้องแยกตามชั้น
-router.get("/dormitories/:dormId/by-floor", authMiddleware, getDormRoomsByFloor);
+router.get("/dormitories/:dormId/by-floor", authCheck, staffCheck, getDormRoomsByFloor);
 // ดึงรายละเอียดห้อง
-router.get("/dormitories/:dormId/rooms/:roomId/detail", authMiddleware, getRoomDetail);
+router.get("/dormitories/:dormId/rooms/:roomId/detail", authCheck, staffCheck, getRoomDetail);
 // ตรวจสอบข้อมูลห้อง
-router.get("/dormitories/:dormId/check-data", authMiddleware, checkRoomsData);
+router.get("/dormitories/:dormId/check-data", authCheck, staffCheck, checkRoomsData);
 // แก้ไขห้องทั้งหมดของหอพัก
-router.put("/dormitories/:dormId", authMiddleware, updateDormRooms);
+router.put("/dormitories/:dormId", authCheck, staffCheck, updateDormRooms);
 // แก้ไขห้องเดี่ยว
-router.put("/:roomId", authMiddleware, updateSingleRoom);
+router.put("/:roomId", authCheck, staffCheck, updateSingleRoom);
 // ลบหลายห้องพร้อมกัน
-router.delete("/multiple", authMiddleware, deleteMultipleRooms);
+router.delete("/multiple", authCheck, staffCheck, deleteMultipleRooms);
 // แก้ไขห้องที่เลือกแบบกลุ่ม
-router.put("/dormitories/:dormId/selected", authMiddleware, bulkUpdateRooms);
+router.put("/dormitories/:dormId/selected", authCheck, staffCheck, bulkUpdateRooms);
 
 module.exports = router;

@@ -1,53 +1,50 @@
-const prisma = require('../config/prisma');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const prisma = require("../config/prisma");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // สมัครสมาชิก
 exports.register = async (req, res) => {
   try {
     const { username, email, phone, password } = req.body;
 
-    // ตรวจสอบข้อมูลที่จำเป็น
+    // --- (ส่วนตรวจสอบข้อมูล Validation เหมือนเดิม ไม่ต้องแก้) ---
     if (!username || !email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'กรุณากรอกข้อมูลให้ครบถ้วน' 
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
     }
 
-    // ตรวจสอบรูปแบบอีเมล
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'รูปแบบอีเมลไม่ถูกต้อง' 
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "รูปแบบอีเมลไม่ถูกต้อง" });
     }
 
-    // ตรวจสอบความยาวรหัสผ่าน
     if (password.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' 
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+        });
     }
 
-    // ตรวจสอบว่าผู้ใช้มีอยู่แล้วหรือไม่
     const existingUser = await prisma.users.findFirst({
       where: {
-        OR: [
-          { username: username },
-          { email: email }
-        ]
-      }
+        OR: [{ username: username }, { email: email }],
+      },
     });
 
     if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'ชื่อผู้ใช้หรืออีเมลนี้ถูกใช้งานแล้ว' 
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "ชื่อผู้ใช้หรืออีเมลนี้ถูกใช้งานแล้ว",
+        });
     }
+    // -----------------------------------------------------
 
     // เข้ารหัสรหัสผ่าน
     const saltRounds = 10;
@@ -59,102 +56,137 @@ exports.register = async (req, res) => {
         username,
         email,
         phone: phone || null,
-        password_hash
-      },
-      select: {
-        user_id: true,
-        username: true,
-        email: true,
-        phone: true
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'สมัครสมาชิกสำเร็จ',
-      user: newUser
-    });
-
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก'
-    });
-  }
-};
-
-// เข้าสู่ระบบ
-exports.login = async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // ตรวจสอบข้อมูลที่จำเป็น
-    if (!username || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน' 
-      });
-    }
-
-    // ค้นหาผู้ใช้
-    const user = await prisma.users.findUnique({
-      where: {
-        username: username
+        password_hash,
+        role: "OWNER",
       },
       select: {
         user_id: true,
         username: true,
         email: true,
         phone: true,
-        password_hash: true
-      }
+        role: true,
+      },
     });
 
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' 
+    res.status(200).json(newUser);
+  } catch (error) {
+    console.error("Register error:", error);
+    res.status(500).json({
+      message: "เกิดข้อผิดพลาดในการสมัครสมาชิก",
+    });
+  }
+};
+
+exports.login = async (req, res) => {
+  try {
+    // 1. รับค่า email และ password
+    const { email, password } = req.body;
+
+    // ตรวจสอบข้อมูลที่จำเป็น
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกอีเมลและรหัสผ่าน",
       });
     }
 
-    // ตรวจสอบรหัสผ่าน
+    // 2. ค้นหาผู้ใช้ด้วย Email
+    const user = await prisma.users.findUnique({
+      where: {
+        email: email,
+      },
+      select: {
+        user_id: true,
+        username: true,
+        email: true,
+        phone: true,
+        password_hash: true,
+        role: true,     
+        is_active: true,
+        tenant_info: {   
+          select: {
+            tenant_id: true,
+            first_name: true,
+            room_id: true,
+          },
+        },
+        // ✅ เพิ่มตรงนี้ 1: ดึงข้อมูลว่า Staff ดูแลหอไหน (ผ่าน Relation)
+        working_dorms: {
+          take: 1, // เอามาแค่ 1 หอ (กรณีดูแลหลายหอค่อยว่ากัน)
+          select: {
+            dorm_id: true
+          }
+        }
+      },
+    });
+
+    // กรณีไม่พบผู้ใช้
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+      });
+    }
+
+    // 3. เช็คสถานะบัญชี
+    if (user.is_active === false) {
+      return res.status(403).json({
+        success: false,
+        message: "บัญชีของคุณถูกระงับการใช้งาน กรุณาติดต่อเจ้าหน้าที่",
+      });
+    }
+
+    // 4. ตรวจสอบรหัสผ่าน
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' 
+      return res.status(401).json({
+        success: false,
+        message: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
       });
     }
 
-    // สร้าง JWT Token
+    // ถ้ามีข้อมูลใน working_dorms ให้เอา dorm_id ตัวแรกมา ถ้าไม่มีให้เป็น null
+    const staffDormId = user.working_dorms?.[0]?.dorm_id || null;
+
+    // 5. สร้าง JWT Token
+    const payload = {
+      user_id: user.user_id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenant_info?.tenant_id || null,
+      staffDormId: staffDormId 
+    };
+
     const token = jwt.sign(
-      { 
-        user_id: user.user_id, 
-        username: user.username 
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
+      payload,
+      process.env.JWT_SECRET || process.env.SECRETE_KEY || 'your_fallback_secret',
+      { expiresIn: "24h" }
     );
 
+    // 6. ส่ง Response กลับไปให้ Frontend
     res.json({
       success: true,
-      message: 'เข้าสู่ระบบสำเร็จ',
-      token,
-      user: {
+      message: "เข้าสู่ระบบสำเร็จ",
+      token: token,
+      payload: payload, 
+      user: {          
         user_id: user.user_id,
         username: user.username,
         email: user.email,
-        phone: user.phone
+        phone: user.phone,
+        role: user.role,
+        is_active: user.is_active,
+        staffDormId: staffDormId // ส่งกลับไปเผื่อใช้แสดงผล
       }
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+      message: "เกิดข้อผิดพลาดในการเข้าสู่ระบบ",
     });
   }
 };
@@ -162,47 +194,81 @@ exports.login = async (req, res) => {
 // ตรวจสอบสถานะการเข้าสู่ระบบ
 exports.verifyToken = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    // 1. ดึง Token จาก Header (Format: "Bearer <token>")
+    const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'ไม่พบ Token' 
+      return res.status(401).json({
+        success: false,
+        message: "ไม่พบ Token การยืนยันตัวตน",
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
-    // ค้นหาข้อมูลผู้ใช้
+    // 2. ตรวจสอบความถูกต้องของ Token (Signature & Expiry)
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || process.env.SECRETE_KEY || 'your_fallback_secret' 
+    );
+
+    // 3. ค้นหาข้อมูลผู้ใช้ล่าสุดจาก DB
+    // (ต้อง Query ใหม่ทุกครั้ง เพื่อให้ได้ข้อมูลล่าสุด เช่น Role หรือ Status)
     const user = await prisma.users.findUnique({
       where: {
-        user_id: decoded.user_id
+        user_id: decoded.user_id,
       },
       select: {
         user_id: true,
         username: true,
         email: true,
-        phone: true
-      }
+        phone: true,
+        role: true,      // จำเป็นมาก
+        is_active: true, // ✅ ดึงสถานะมาเช็ค
+        tenant_info: {   // ดึงข้อมูล Tenant
+          select: {
+            tenant_id: true,
+            first_name: true,
+            room_id: true,
+          },
+        },
+      },
     });
 
+    // กรณีไม่เจอ User ใน DB (อาจจะโดนลบไปแล้ว)
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'ไม่พบผู้ใช้' 
+      return res.status(401).json({
+        success: false,
+        message: "ไม่พบข้อมูลผู้ใช้ในระบบ",
       });
     }
 
+    // ✅ 4. เช็คสถานะบัญชี (สำคัญ: ถ้าโดนแบน ต้องเข้าไม่ได้)
+    if (user.is_active === false) {
+      return res.status(403).json({
+        success: false,
+        message: "บัญชีของคุณถูกระงับการใช้งาน",
+      });
+    }
+
+    // 5. ส่งข้อมูลกลับไปให้ Frontend (AuthContext)
     res.json({
       success: true,
-      user: user
+      user: {
+        user_id: user.user_id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        is_active: user.is_active,
+        tenant_id: user.tenant_info?.tenant_id || null, 
+      },
     });
 
   } catch (error) {
-    console.error('Verify token error:', error);
+    console.error("Verify token error:", error);
+    // กรณี Token หมดอายุ หรือ Signature ผิด
     res.status(401).json({
       success: false,
-      message: 'Token ไม่ถูกต้อง'
+      message: "Session หมดอายุ หรือ Token ไม่ถูกต้อง",
     });
   }
 };
@@ -216,18 +282,18 @@ exports.updateProfile = async (req, res) => {
 
     // ตรวจสอบข้อมูลที่จำเป็น
     if (!username || !email) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'กรุณากรอกชื่อผู้ใช้และอีเมล' 
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกชื่อผู้ใช้และอีเมล",
       });
     }
 
     // ตรวจสอบรูปแบบอีเมล
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'รูปแบบอีเมลไม่ถูกต้อง' 
+      return res.status(400).json({
+        success: false,
+        message: "รูปแบบอีเมลไม่ถูกต้อง",
       });
     }
 
@@ -236,15 +302,15 @@ exports.updateProfile = async (req, res) => {
       where: {
         username: username,
         NOT: {
-          user_id: user_id
-        }
-      }
+          user_id: user_id,
+        },
+      },
     });
 
     if (existingUsername) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว' 
+      return res.status(400).json({
+        success: false,
+        message: "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว",
       });
     }
 
@@ -253,48 +319,47 @@ exports.updateProfile = async (req, res) => {
       where: {
         email: email,
         NOT: {
-          user_id: user_id
-        }
-      }
+          user_id: user_id,
+        },
+      },
     });
 
     if (existingEmail) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'อีเมลนี้ถูกใช้งานแล้ว' 
+      return res.status(400).json({
+        success: false,
+        message: "อีเมลนี้ถูกใช้งานแล้ว",
       });
     }
 
     // อัปเดตข้อมูล
     const result = await prisma.users.update({
       where: {
-        user_id: user_id
+        user_id: user_id,
       },
       data: {
         username,
         email,
         phone: phone || null,
-        updated_at: new Date()
+        updated_at: new Date(),
       },
       select: {
         user_id: true,
         username: true,
         email: true,
-        phone: true
-      }
+        phone: true,
+      },
     });
 
     res.json({
       success: true,
-      message: 'อัปเดตข้อมูลสำเร็จ',
-      user: result
+      message: "อัปเดตข้อมูลสำเร็จ",
+      user: result,
     });
-
   } catch (error) {
-    console.error('Update profile error:', error);
+    console.error("Update profile error:", error);
     res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล'
+      message: "เกิดข้อผิดพลาดในการอัปเดตข้อมูล",
     });
   }
 };
@@ -308,45 +373,48 @@ exports.changePassword = async (req, res) => {
 
     // ตรวจสอบข้อมูลที่จำเป็น
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'กรุณากรอกรหัสผ่านปัจจุบันและรหัสผ่านใหม่' 
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกรหัสผ่านปัจจุบันและรหัสผ่านใหม่",
       });
     }
 
     // ตรวจสอบความยาวรหัสผ่านใหม่
     if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร' 
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร",
       });
     }
 
     // ค้นหาผู้ใช้และรหัสผ่านปัจจุบัน
     const user = await prisma.users.findUnique({
       where: {
-        user_id: user_id
+        user_id: user_id,
       },
       select: {
         user_id: true,
-        password_hash: true
-      }
+        password_hash: true,
+      },
     });
 
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'ไม่พบผู้ใช้' 
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบผู้ใช้",
       });
     }
 
     // ตรวจสอบรหัสผ่านปัจจุบัน
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    );
 
     if (!isCurrentPasswordValid) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'รหัสผ่านปัจจุบันไม่ถูกต้อง' 
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
       });
     }
 
@@ -357,24 +425,23 @@ exports.changePassword = async (req, res) => {
     // อัปเดตรหัสผ่าน
     await prisma.users.update({
       where: {
-        user_id: user_id
+        user_id: user_id,
       },
       data: {
         password_hash: newPasswordHash,
-        updated_at: new Date()
-      }
+        updated_at: new Date(),
+      },
     });
 
     res.json({
       success: true,
-      message: 'เปลี่ยนรหัสผ่านสำเร็จ'
+      message: "เปลี่ยนรหัสผ่านสำเร็จ",
     });
-
   } catch (error) {
-    console.error('Change password error:', error);
+    console.error("Change password error:", error);
     res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน'
+      message: "เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน",
     });
   }
 };
@@ -388,17 +455,17 @@ exports.resetPasswordWithToken = async (req, res) => {
 
     // ตรวจสอบข้อมูลที่จำเป็น
     if (!newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'กรุณากรอกรหัสผ่านใหม่' 
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกรหัสผ่านใหม่",
       });
     }
 
     // ตรวจสอบความยาวรหัสผ่านใหม่
     if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร' 
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร",
       });
     }
 
@@ -409,25 +476,23 @@ exports.resetPasswordWithToken = async (req, res) => {
     // อัปเดตรหัสผ่าน
     await prisma.users.update({
       where: {
-        user_id: user_id
+        user_id: user_id,
       },
       data: {
         password_hash: newPasswordHash,
-        updated_at: new Date()
-      }
+        updated_at: new Date(),
+      },
     });
 
     res.json({
       success: true,
-      message: 'รีเซ็ตรหัสผ่านสำเร็จ'
+      message: "รีเซ็ตรหัสผ่านสำเร็จ",
     });
-
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error("Reset password error:", error);
     res.status(500).json({
       success: false,
-      message: 'เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน'
+      message: "เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน",
     });
   }
 };
-

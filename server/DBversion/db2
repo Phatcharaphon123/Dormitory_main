@@ -446,7 +446,6 @@ model users {
   role          Role          @default(OWNER) 
   created_at    DateTime?     @default(now()) @db.Timestamp(6)
   updated_at    DateTime?     @default(now()) @db.Timestamp(6)
-  is_active     Boolean       @default(true)
 
   // หอพักที่เป็นเจ้าของ (Owner)
   owned_dorms   dormitories[] @relation("OwnerDorms")
@@ -478,3 +477,5 @@ enum meter_type {
   water
   electricity
 }
+
+-- เพิ่ม role

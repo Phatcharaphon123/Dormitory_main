@@ -10,10 +10,9 @@ import {
 import { AuthProvider } from "../contexts/AuthContext";
 
 // Components
-import ProtectedRoute from "../components/common/ProtectedRoute";
+import ProtectedRoute from "./ProtectedRoute";
 
 // Layouts
-// import MainLayout from "../pages/OwnerDorm/MainLayout";
 import LayoutDormManage from "../layouts/LayoutDormManage";
 import LayoutOwnerDorm from "../layouts/LayoutOwnerDorm";
 
@@ -24,7 +23,7 @@ import AddDormInfo from "../pages/OwnerDorm/ManageDorm/Adddorm/AddDormInfo";
 import Dashboard from "../pages/OwnerDorm/Dashboard/Dashboard";
 import StaffManage from "../pages/OwnerDorm/StaffManage/StaffManage";
 
-// Dorm pages
+// Dorm pages (Imports เหมือนเดิม ย่อเพื่อความกระชับ)
 import DashboardDorm from "../pages/DormManage/dashboard/DashboardDorm";
 import RoomsPlan from "../pages/DormManage/RoomPlan/RoomPlan";
 import Bills from "../pages/DormManage/Bills/MonthBills";
@@ -46,15 +45,11 @@ import RoomMeterDetail from "../pages/meter/RoomMeterDetail";
 import AddMeterDigital from "../pages/meter/AddMeterDigital";
 import MoveOuWaitforMoveOut from "../pages/DormManage/MoveOutManage/WaitforMoveOut";
 import MoveOut from "../pages/DormManage/MoveOutManage/MoveOut";
-
-// Reports pages
 import Receipts from "../pages/DormManage/Reports/Receipts";
 import MonthlyBillsReport from "../pages/DormManage/Reports/MonthlyBillsReport";
 import TenantReport from "../pages/DormManage/Reports/TenantReport";
 import UtilitySummaryReport from "../pages/DormManage/Reports/UtilitySummaryReport";
 import ReceiptPrint from "../pages/DormManage/Room/ContractPages/ContractReceipt/ReceiptPrint";
-
-// Setting pages
 import SettingDormNavbar from "../pages/DormManage/SettingDorm/SettingDormNavbar";
 import SettingDormInfo from "../pages/DormManage/SettingDorm/SettingDormInfo"; 
 
@@ -64,12 +59,13 @@ import Register from "../pages/auth/Register";
 
 // --- Router Configuration ---
 const router = createBrowserRouter([
-  // 1. Root Redirect (เปลี่ยนให้ไป ownerdorm แทน)
+  // 1. Root Redirect
   {
     path: "/",
-    element: <Navigate to="/dashboard" replace />,
+    // แนะนำให้ชี้ไป Login ก่อน เดี๋ยวระบบ Login จะพาไปหน้า Dashboard ที่ถูกต้องเอง
+    element: <Navigate to="/login" replace />,
   },
-  // 2. Public Routes (ไม่ต้อง Login)
+  // 2. Public Routes
   {
     path: "/login",
     element: <Login />,
@@ -78,10 +74,14 @@ const router = createBrowserRouter([
     path: "/register",
     element: <Register />,
   },
-  // 3. OwnerDorm Layout (หลัง login เจอหน้านี้)
+  
+  // -----------------------------------------------------------
+  // 3. กลุ่ม OWNER (ระดับบริหารจัดการภาพรวม)
+  // -----------------------------------------------------------
   {
     element: (
-      <ProtectedRoute>
+      // ✅ แก้จุดที่ 1: ใส่ allowedRoles เพื่อให้เข้าได้เฉพาะเจ้าของ
+      <ProtectedRoute allowedRoles={['OWNER', 'SUPER_ADMIN']}>
         <LayoutOwnerDorm />
       </ProtectedRoute>
     ),
@@ -92,15 +92,15 @@ const router = createBrowserRouter([
       { path: "/profile", element: <Profile /> },
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/ownerdorm/staffmanage", element: <StaffManage /> },
-      // เพิ่ม path อื่นๆ ที่ต้องการให้ owner เห็นที่นี่
     ],
   },
 
-  // 4. LayoutDormManage Group (ต้อง Login + เป็นเจ้าของ/Admin)
-  // ใช้สำหรับหน้าจัดการหอพัก
+  // -----------------------------------------------------------
+  // 4. กลุ่ม Management (ระดับปฏิบัติการในหอพัก)
+  // -----------------------------------------------------------
   {
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['OWNER', 'STAFF', 'SUPER_ADMIN']}>
         <LayoutDormManage /> 
       </ProtectedRoute>
     ),
@@ -153,7 +153,6 @@ const router = createBrowserRouter([
 
 const AppRoutes = () => {
   return (
-    // เอา AuthProvider มาครอบ RouterProvider เพื่อให้ Context ส่งไปถึงทุกหน้า
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {  register,login,verifyToken,updateProfile,changePassword,resetPasswordWithToken } = require('../controllers/userController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 // สมัครสมาชิก
 router.post('/register', register);
@@ -12,12 +12,12 @@ router.post('/login', login);
 router.get('/verify', verifyToken);
 
 // อัปเดตข้อมูลโปรไฟล์
-router.put('/profile', authMiddleware, updateProfile);
+router.put('/profile', authCheck, updateProfile);
 
 // เปลี่ยนรหัสผ่าน
-router.put('/change-password', authMiddleware, changePassword);
+router.put('/change-password', authCheck, changePassword);
 
 // รีเซ็ตรหัสผ่านด้วย Token
-router.put('/reset-password', authMiddleware, resetPasswordWithToken);
+router.put('/reset-password', authCheck, resetPasswordWithToken);
 
 module.exports = router;
