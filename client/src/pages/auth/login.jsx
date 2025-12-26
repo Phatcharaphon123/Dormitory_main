@@ -49,8 +49,8 @@ function Login() {
           else if (payload.role === "OWNER") {
             navigate("/dashboard");
           }
-          // ✅ 3. STAFF
-          else if (payload.role === "STAFF") {
+          // ✅ 3. ADMIN ไปหน้า Dashboard ของหอพักที่ผูกไว้
+          else if (payload.role === "ADMIN") {
             if (payload.staffDormId) {
               navigate(`/dashboard/${payload.staffDormId}`);
             } else {

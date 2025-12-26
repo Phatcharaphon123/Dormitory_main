@@ -71,10 +71,10 @@ exports.authCheck = async (req, res, next) => {
 // 2. สำหรับ SUPER_ADMIN เท่านั้น
 exports.superAdminCheck = async (req, res, next) => {
     try {
-        // ดึง Role จาก req.user ที่ authCheck เตรียมไว้ให้
         const { role } = req.user; 
+        const allowed = ['SUPER_ADMIN'];
 
-        if (role !== 'SUPER_ADMIN') {
+        if (!allowed.includes(role)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Access Denied: Admin Only' 
@@ -87,12 +87,13 @@ exports.superAdminCheck = async (req, res, next) => {
     }
 };
 
-// 3. สำหรับ OWNER (รวมถึง SUPER_ADMIN ก็ควรเข้าได้ เพราะใหญ่สุด)
+// 3. สำหรับ OWNER (รวมถึง SUPER_ADMIN)
 exports.ownerCheck = async (req, res, next) => {
     try {
         const { role } = req.user;
+        const allowed = ['OWNER', 'SUPER_ADMIN'];
 
-        if (role !== 'OWNER' && role !== 'SUPER_ADMIN') {
+        if (!allowed.includes(role)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Access Denied: Owner Resource' 
@@ -105,23 +106,21 @@ exports.ownerCheck = async (req, res, next) => {
     }
 };
 
-// 4. สำหรับ STAFF และ OWNER (เช่น หน้าดูบิล, จดมิเตอร์)
-exports.staffCheck = async (req, res, next) => {
+// 4. สำหรับ ADMIN, OWNER, SUPER_ADMIN
+exports.adminCheck = async (req, res, next) => {
     try {
         const { role } = req.user;
+        const allowed = ['ADMIN', 'OWNER', 'SUPER_ADMIN'];
         
-        // อนุญาต: STAFF, OWNER, SUPER_ADMIN
-        const allowed = ['STAFF', 'OWNER', 'SUPER_ADMIN'];
-
         if (!allowed.includes(role)) {
             return res.status(403).json({ 
                 success: false, 
-                message: 'Access Denied: Staff/Owner Resource' 
+                message: 'Access Denied: Admin/Owner Resource' 
             });
         }
         next();
     } catch (err) {
         console.log(err);
-        res.status(500).json({ message: 'Error Staff Check' });
+        res.status(500).json({ message: 'Error Admin Check' });
     }
 };

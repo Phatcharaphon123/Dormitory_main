@@ -7,7 +7,7 @@ const {
   getDormById,
   updateDorm
 } = require('../controllers/dormitoryController');
-const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
+const { authCheck,superAdminCheck,ownerCheck,adminCheck } = require('../middleware/authCheck');
 const multer = require('multer');
 const path = require('path');
 
@@ -23,18 +23,21 @@ const upload = multer({ storage });
 
 /* ─────────────── 🔹 จัดการหอพัก ─────────────── */
 // ดึงข้อมูลหอพักพร้อมสถิติ (ต้องมาก่อน /:id)
-router.get("/dormitories/with-stats", authCheck, staffCheck, getAllDormsWithStats);
+router.get("/dormitories/with-stats", authCheck, adminCheck, getAllDormsWithStats);
 
-// ดึงหอพักทั้งหมด
-router.get("/dormitories", authCheck, staffCheck, getAllDorms); 
+// ดึงหอพักทั้งหมด (สำหรับ authenticated users)
+router.get("/dormitories", authCheck, adminCheck, getAllDorms); 
+
+// ดึงหอพักทั้งหมด (สำหรับ dropdown - ต้องมี auth)
+router.get("/dorms", authCheck, getAllDorms);
 
 // เพิ่มหอพักใหม่
-router.post("/dormitories", authCheck, staffCheck, upload.single("image"), createDorm);
+router.post("/dormitories", authCheck, adminCheck, upload.single("image"), createDorm);
 
 // ดึงข้อมูลหอพักรายตัว
-router.get("/dormitories/:id", authCheck, staffCheck, getDormById);
+router.get("/dormitories/:id", authCheck, adminCheck, getDormById);
 
 // แก้ไขข้อมูลหอพัก
-router.put("/dormitories/:id", authCheck, staffCheck, upload.fields([{ name: "image", maxCount: 1 }]), updateDorm);
+router.put("/dormitories/:id", authCheck, adminCheck, upload.fields([{ name: "image", maxCount: 1 }]), updateDorm);
 
 module.exports = router;

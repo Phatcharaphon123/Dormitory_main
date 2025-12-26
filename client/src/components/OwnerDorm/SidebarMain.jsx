@@ -17,40 +17,10 @@ const SidebarMain = () => {
   // State สำหรับ User
   const [currentUser, setCurrentUser] = useState({
     name: "Loading...",
-    role: "OWNER"
   });
 
   // State สำหรับจัดการ Submenu (เพิ่มมาเพื่อให้รองรับอนาคต)
   const [openSubMenu, setOpenSubMenu] = useState({});
-
-  // --- Fetch User Data ---
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const id = payload.id || payload.userId;
-        
-        const res = await axios.get(`${API_URL}/api/userall/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        setCurrentUser({
-          name: res.data.username,
-          role: payload.role || res.data.role || "OWNERDORM"
-        });
-      } catch (error) {
-        setCurrentUser({
-          name: "ไม่พบชื่อผู้ใช้",
-          role: "OWNERDORM"
-        });
-      }
-    };
-    
-    fetchUserData();
-  }, []);
 
   // --- Config เมนู (ปรับเป็น Array เพื่อให้จัดการง่ายและรองรับ Submenu) ---
   const menuItems = [
@@ -70,8 +40,8 @@ const SidebarMain = () => {
          ] */
     },
     {
-      title: "จัดการพนักงาน",
-      path: "/ownerdorm/staffmanage",
+      title: "จัดการผู้ดูแลหอพัก",
+      path: "/ownerdorm/adminmanage",
       icon: <GoPeople size={20} />,
     },
   ];

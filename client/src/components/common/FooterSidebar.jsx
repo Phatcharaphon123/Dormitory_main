@@ -21,7 +21,7 @@ const FooterSidebar = () => {
         return "bg-pink-500 text-white";
       case "OWNER":
         return "bg-yellow-500 text-gray-900";
-      case "STAFF":
+      case "ADMIN":
         return "bg-blue-600 blue-white";
       case "TENANT":
         return "bg-purple-500 text-white";

@@ -16,53 +16,53 @@ const {
   getTerminatedContracts,
   getTerminatedContractDetail
 } = require('../controllers/contractController');
-const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
+const { authCheck,superAdminCheck,ownerCheck,adminCheck } = require('../middleware/authCheck');
 
 
 /* ─────────────── 🔹 สัญญาและผู้เช่า ─────────────── */
 // สร้างสัญญาใหม่
-router.post('/contracts/dormitories/:dormId/rooms/:roomNumber', authCheck, staffCheck, createContract);
+router.post('/contracts/dormitories/:dormId/rooms/:roomNumber', authCheck, adminCheck, createContract);
 
 // ดึงสัญญาทั้งหมดตามหอพัก
-router.get('/contracts/dormitories/:dormId', authCheck, staffCheck, getContractsByDorm);
+router.get('/contracts/dormitories/:dormId', authCheck, adminCheck, getContractsByDorm);
 
 // ดึงสัญญาตามห้อง
-router.get('/contracts/dormitories/:dormId/rooms/:roomNumber', authCheck, staffCheck, getContractByRoom);
+router.get('/contracts/dormitories/:dormId/rooms/:roomNumber', authCheck, adminCheck, getContractByRoom);
 
 // ดึงรายละเอียดสัญญา
-router.get('/contracts/:contractId', authCheck, staffCheck, getContractDetail);
+router.get('/contracts/:contractId', authCheck, adminCheck, getContractDetail);
 
 // แก้ไขสัญญา
-router.put('/contracts/:contractId', authCheck, staffCheck, updateContract);
+router.put('/contracts/:contractId', authCheck, adminCheck, updateContract);
 
 /* ─────────────── 🔹 บริการในสัญญา ─────────────── */
 // ดึงรายการบริการในสัญญา
-router.get('/contracts/:contractId/services', authCheck, staffCheck, getContractServices);
+router.get('/contracts/:contractId/services', authCheck, adminCheck, getContractServices);
 
 // เพิ่มบริการในสัญญา
-router.post('/contracts/:contractId/services', authCheck, staffCheck, addContractService);
+router.post('/contracts/:contractId/services', authCheck, adminCheck, addContractService);
 
 // แก้ไขบริการในสัญญา
-router.put('/contracts/:contractId/services/:serviceId', authCheck, staffCheck, updateContractService);
+router.put('/contracts/:contractId/services/:serviceId', authCheck, adminCheck, updateContractService);
 
 // ลบบริการในสัญญา
-router.delete('/contracts/:contractId/services/:serviceId', authCheck, staffCheck, deleteContractService);
+router.delete('/contracts/:contractId/services/:serviceId', authCheck, adminCheck, deleteContractService);
 
 // ยุติสัญญา
-router.post('/contracts/:contractId/terminate', authCheck, staffCheck, terminateContract);
+router.post('/contracts/:contractId/terminate', authCheck, adminCheck, terminateContract);
 
 // ดึงรายการผู้ขอย้ายออก
-router.get('/contracts/dormitories/:dormId/moveout-list', authCheck, staffCheck, getMoveoutList);
+router.get('/contracts/dormitories/:dormId/moveout-list', authCheck, adminCheck, getMoveoutList);
 
 // ยกเลิกการแจ้งย้ายออก
-router.put('/contracts/:contractId/cancel-moveout', authCheck, staffCheck, cancelMoveoutNotice);
+router.put('/contracts/:contractId/cancel-moveout', authCheck, adminCheck, cancelMoveoutNotice);
 
 /* ─────────────── 🔹 สัญญาที่ยุติแล้ว ─────────────── */
 // ดึงสัญญาที่ยุติแล้วตามหอพัก
-router.get('/contracts/dormitories/:dormId/terminated', authCheck, staffCheck, getTerminatedContracts);
+router.get('/contracts/dormitories/:dormId/terminated', authCheck, adminCheck, getTerminatedContracts);
 
 // ดึงรายละเอียดสัญญาที่ยุติแล้ว
-router.get('/contracts/:contractId/terminated', authCheck, staffCheck, getTerminatedContractDetail);
+router.get('/contracts/:contractId/terminated', authCheck, adminCheck, getTerminatedContractDetail);
 
 
 

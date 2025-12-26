@@ -30,7 +30,7 @@ useEffect(() => {
 
 
   return (
-    <div className="mt-6 px-[10%] mb-5">
+    <div className="max-w-7xl mx-auto p-6">
       {/* ปุ่มเพิ่มหอพัก */}
       <div className="flex justify-between items-center mb-6">
         <button
@@ -52,7 +52,7 @@ useEffect(() => {
           dormList.map((dorm) => (
           <div
             key={dorm.dorm_id}
-            className="border border-gray-300 bg-white rounded-md shadow-sm overflow-hidden"
+            className="border border-gray-300 bg-white rounded-xl shadow-sm overflow-hidden"
           >
             {/* หัวข้อ */}
             <div className="flex justify-between items-center border-b border-gray-300 px-6 py-4 bg-gray-50">

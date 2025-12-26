@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 // รับ prop: children และ allowedRoles
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  // ✅ 1. ดึง logout มาด้วย (เพื่อความชัวร์ว่าดีดออกจริง)
+  // 1. ดึง logout มาด้วย (เพื่อความชัวร์ว่าดีดออกจริง)
   const { isAuthenticated, user, loading, logout } = useAuth();
 
   if (loading) {

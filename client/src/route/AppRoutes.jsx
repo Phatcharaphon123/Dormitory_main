@@ -21,7 +21,7 @@ import DormView from "../pages/OwnerDorm/ManageDorm/DormView";
 import Profile from "../pages/OwnerDorm/Profile/Profile";
 import AddDormInfo from "../pages/OwnerDorm/ManageDorm/Adddorm/AddDormInfo";
 import Dashboard from "../pages/OwnerDorm/Dashboard/Dashboard";
-import StaffManage from "../pages/OwnerDorm/StaffManage/StaffManage";
+import AdminManage from "../pages/OwnerDorm/AdminManage/AdminManage";
 
 // Dorm pages (Imports เหมือนเดิม ย่อเพื่อความกระชับ)
 import DashboardDorm from "../pages/DormManage/dashboard/DashboardDorm";
@@ -91,7 +91,7 @@ const router = createBrowserRouter([
       { path: "/youdorm", element: <DormView /> },
       { path: "/profile", element: <Profile /> },
       { path: "/dashboard", element: <Dashboard /> },
-      { path: "/ownerdorm/staffmanage", element: <StaffManage /> },
+      { path: "/ownerdorm/adminmanage", element: <AdminManage /> },
     ],
   },
 
@@ -100,7 +100,7 @@ const router = createBrowserRouter([
   // -----------------------------------------------------------
   {
     element: (
-      <ProtectedRoute allowedRoles={['OWNER', 'STAFF', 'SUPER_ADMIN']}>
+      <ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'SUPER_ADMIN']}>
         <LayoutDormManage /> 
       </ProtectedRoute>
     ),

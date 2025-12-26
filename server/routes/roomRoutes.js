@@ -12,38 +12,38 @@ const {
   bulkUpdateRooms,
   deleteMultipleRooms
 } = require('../controllers/roomController');
-const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
+const { authCheck,superAdminCheck,ownerCheck,adminCheck } = require('../middleware/authCheck');
 
 /* ─────────────── 🔹 จัดการชั้น ─────────────── */
 // ดึงชั้นทั้งหมดของหอพัก
-router.get("/rooms/dormitories/:dormId/floors", authCheck, staffCheck, getDormFloors);
+router.get("/rooms/dormitories/:dormId/floors", authCheck, adminCheck, getDormFloors);
 
 // แก้ไขชั้นของหอพัก
-router.put("/rooms/dormitories/:dormId/floors", authCheck, staffCheck, updateDormFloors);
+router.put("/rooms/dormitories/:dormId/floors", authCheck, adminCheck, updateDormFloors);
 
 /* ─────────────── 🔹 จัดการห้อง ─────────────── */
 // ดึงห้องทั้งหมดของหอพัก
-router.get("/rooms/dormitories/:dormId", authCheck, staffCheck, getDormRooms);
+router.get("/rooms/dormitories/:dormId", authCheck, adminCheck, getDormRooms);
 
 // ดึงห้องแยกตามชั้น
-router.get("/rooms/dormitories/:dormId/by-floor", authCheck, staffCheck, getDormRoomsByFloor);
+router.get("/rooms/dormitories/:dormId/by-floor", authCheck, adminCheck, getDormRoomsByFloor);
 
 // ดึงรายละเอียดห้อง
-router.get("/rooms/dormitories/:dormId/rooms/:roomId/detail", authCheck, staffCheck, getRoomDetail);
+router.get("/rooms/dormitories/:dormId/rooms/:roomId/detail", authCheck, adminCheck, getRoomDetail);
 
 // ตรวจสอบข้อมูลห้อง
-router.get("/rooms/dormitories/:dormId/check-data", authCheck, staffCheck, checkRoomsData);
+router.get("/rooms/dormitories/:dormId/check-data", authCheck, adminCheck, checkRoomsData);
 
 // แก้ไขห้องทั้งหมดของหอพัก
-router.put("/rooms/dormitories/:dormId", authCheck, staffCheck, updateDormRooms);
+router.put("/rooms/dormitories/:dormId", authCheck, adminCheck, updateDormRooms);
 
 // แก้ไขห้องเดี่ยว
-router.put("/rooms/:roomId", authCheck, staffCheck, updateSingleRoom);
+router.put("/rooms/:roomId", authCheck, adminCheck, updateSingleRoom);
 
 // ลบหลายห้องพร้อมกัน
-router.delete("/rooms/multiple", authCheck, staffCheck, deleteMultipleRooms);
+router.delete("/rooms/multiple", authCheck, adminCheck, deleteMultipleRooms);
 
 // แก้ไขห้องที่เลือกแบบกลุ่ม
-router.put("/rooms/dormitories/:dormId/selected", authCheck, staffCheck, bulkUpdateRooms);
+router.put("/rooms/dormitories/:dormId/selected", authCheck, adminCheck, bulkUpdateRooms);
 
 module.exports = router;

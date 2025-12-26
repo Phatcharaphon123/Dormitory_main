@@ -7,7 +7,7 @@ const {
   updateRoomType,
   deleteRoomType
 } = require('../controllers/roomTypeController');
-const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
+const { authCheck,superAdminCheck,ownerCheck,adminCheck } = require('../middleware/authCheck');
 const multer = require('multer');
 const path = require('path');
 
@@ -23,21 +23,21 @@ const upload = multer({ storage });
 
 /* ─────────────── 🔹 ประเภทห้อง ─────────────── */
 // ดึงประเภทห้องตาม ID
-router.get("/room-types/:id", authCheck, staffCheck, getRoomTypeById);
+router.get("/room-types/:id", authCheck, adminCheck, getRoomTypeById);
 
 // ดึงประเภทห้องทั้งหมดตามหอพัก
-router.get("/room-types/dormitories/:dormId", authCheck, staffCheck, getAllRoomTypes);
+router.get("/room-types/dormitories/:dormId", authCheck, adminCheck, getAllRoomTypes);
 
 // ดึงประเภทห้องตาม ID และหอพัก
-router.get("/room-types/dormitories/:dormId/:id", authCheck, staffCheck, getRoomTypeById);
+router.get("/room-types/dormitories/:dormId/:id", authCheck, adminCheck, getRoomTypeById);
 
 // สร้างประเภทห้องใหม่
-router.post("/room-types/dormitories/:dormId", authCheck, staffCheck, upload.array('images', 10), createRoomType);
+router.post("/room-types/dormitories/:dormId", authCheck, adminCheck, upload.array('images', 10), createRoomType);
 
 // แก้ไขประเภทห้อง
-router.put("/room-types/dormitories/:dormId/:id", authCheck, staffCheck, upload.array('images', 10), updateRoomType);
+router.put("/room-types/dormitories/:dormId/:id", authCheck, adminCheck, upload.array('images', 10), updateRoomType);
 
 // ลบประเภทห้อง
-router.delete("/room-types/dormitories/:dormId/:id", authCheck, staffCheck, deleteRoomType);
+router.delete("/room-types/dormitories/:dormId/:id", authCheck, adminCheck, deleteRoomType);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {  register,login,verifyToken,updateProfile,changePassword,resetPasswordWithToken } = require('../controllers/userController');
-const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
+const { authCheck,superAdminCheck,ownerCheck,adminCheck } = require('../middleware/authCheck');
 
 // สมัครสมาชิก
 router.post('/auth/register', register);
