@@ -8,11 +8,12 @@ datasource db {
 }
 
 enum Role {
-  SUPER_ADMIN  // ผู้ดูแลระบบ
-  OWNER        // เจ้าของหอ
-  STAFF        // พนักงานดูแลทั่วไป
-  TENANT       // ผู้เช่า
-  TECHNICIAN   // ช่าง 
+  SUPER_ADMIN   // Developer / IT Support (เข้าได้ทุกที่ แก้ได้ทุกอย่าง)
+  OWNER         // เจ้าของกิจการ (ดู Dashboard การเงิน, เพิ่มหอใหม่, แต่งตั้ง Admin)
+  ADMIN         // **ผู้จัดการหอพัก** (ดูแลจัดการผู้เช่า, ทำสัญญา, ออกบิล - ดูแลเฉพาะหอที่ระบุ)
+  STAFF         // **พนักงานปฏิบัติการ** (จดมิเตอร์, ดูรายการแจ้งซ่อม, ทำความสะอาด - ไม่ยุ่งเรื่องเงิน/สัญญา)
+  TENANT        // ผู้เช่า
+  TECHNICIAN    // ช่างซ่อมบำรุง
 }
 
 model bill_send_history {
@@ -446,6 +447,7 @@ model users {
   role          Role          @default(OWNER) 
   created_at    DateTime?     @default(now()) @db.Timestamp(6)
   updated_at    DateTime?     @default(now()) @db.Timestamp(6)
+  is_active     Boolean       @default(true)
 
   // หอพักที่เป็นเจ้าของ (Owner)
   owned_dorms   dormitories[] @relation("OwnerDorms")
@@ -478,4 +480,4 @@ enum meter_type {
   electricity
 }
 
--- เพิ่ม role
+// เพิ่ม role
