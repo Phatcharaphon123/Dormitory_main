@@ -12,18 +12,18 @@ const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middlewa
 /* ─────────────── 🔹 จัดการมิเตอร์ ─────────────── */
 
 // ดึงมิเตอร์ทั้งหมดตามหอพัก
-router.get('/dormitories/:dormId', authCheck, staffCheck, getDormMeters);
+router.get('/meters/meter-records/dormitories/:dormId', authCheck, staffCheck, getDormMeters);
 
 // เพิ่มมิเตอร์ไฟฟ้า
-router.post('/electric', authCheck, staffCheck, addElectricMeter);
+router.post('/meters/meter-records/electric', authCheck, staffCheck, addElectricMeter);
 
 // เพิ่มมิเตอร์น้ำ
-router.post('/water', authCheck, staffCheck, addWaterMeter);
+router.post('/meters/meter-records/water', authCheck, staffCheck, addWaterMeter);
 
 // ลบมิเตอร์ไฟฟ้า
-router.delete('/electric/:roomId', authCheck, staffCheck, removeElectricMeter);
+router.delete('/meters/meter-records/electric/:roomId', authCheck, staffCheck, removeElectricMeter);
 
 // ลบมิเตอร์น้ำ
-router.delete('/water/:roomId', authCheck, staffCheck, removeWaterMeter);
+router.delete('/meters/meter-records/water/:roomId', authCheck, staffCheck, removeWaterMeter);
 
 module.exports = router;

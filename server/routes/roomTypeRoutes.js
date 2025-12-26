@@ -23,16 +23,21 @@ const upload = multer({ storage });
 
 /* ─────────────── 🔹 ประเภทห้อง ─────────────── */
 // ดึงประเภทห้องตาม ID
-router.get("/:id", authCheck, staffCheck, getRoomTypeById);
+router.get("/room-types/:id", authCheck, staffCheck, getRoomTypeById);
+
 // ดึงประเภทห้องทั้งหมดตามหอพัก
-router.get("/dormitories/:dormId", authCheck, staffCheck, getAllRoomTypes);
+router.get("/room-types/dormitories/:dormId", authCheck, staffCheck, getAllRoomTypes);
+
 // ดึงประเภทห้องตาม ID และหอพัก
-router.get("/dormitories/:dormId/:id", authCheck, staffCheck, getRoomTypeById);
+router.get("/room-types/dormitories/:dormId/:id", authCheck, staffCheck, getRoomTypeById);
+
 // สร้างประเภทห้องใหม่
-router.post("/dormitories/:dormId", authCheck, staffCheck, upload.array('images', 10), createRoomType);
+router.post("/room-types/dormitories/:dormId", authCheck, staffCheck, upload.array('images', 10), createRoomType);
+
 // แก้ไขประเภทห้อง
-router.put("/dormitories/:dormId/:id", authCheck, staffCheck, upload.array('images', 10), updateRoomType);
+router.put("/room-types/dormitories/:dormId/:id", authCheck, staffCheck, upload.array('images', 10), updateRoomType);
+
 // ลบประเภทห้อง
-router.delete("/dormitories/:dormId/:id", authCheck, staffCheck, deleteRoomType);
+router.delete("/room-types/dormitories/:dormId/:id", authCheck, staffCheck, deleteRoomType);
 
 module.exports = router;

@@ -4,20 +4,20 @@ const {  register,login,verifyToken,updateProfile,changePassword,resetPasswordWi
 const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middleware/authCheck');
 
 // สมัครสมาชิก
-router.post('/register', register);
+router.post('/auth/register', register);
 // เข้าสู่ระบบ
-router.post('/login', login);
+router.post('/auth/login', login);
 
 // ตรวจสอบสถานะการเข้าสู่ระบบ
-router.get('/verify', verifyToken);
+router.get('/auth/verify', verifyToken);
 
 // อัปเดตข้อมูลโปรไฟล์
-router.put('/profile', authCheck, updateProfile);
+router.put('/auth/profile', authCheck, updateProfile);
 
 // เปลี่ยนรหัสผ่าน
-router.put('/change-password', authCheck, changePassword);
+router.put('/auth/change-password', authCheck, changePassword);
 
 // รีเซ็ตรหัสผ่านด้วย Token
-router.put('/reset-password', authCheck, resetPasswordWithToken);
+router.put('/auth/reset-password', authCheck, resetPasswordWithToken);
 
 module.exports = router;

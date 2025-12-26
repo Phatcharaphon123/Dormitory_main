@@ -14,24 +14,24 @@ const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middlewa
 /* ─────────────── 🔹 จัดการใบเสร็จ ─────────────── */
 
 // สร้างใบเสร็จใหม่
-router.post('/contracts/:contractId', authCheck, staffCheck, createReceipt);
+router.post('/receipts/contracts/:contractId', authCheck, staffCheck, createReceipt);
 
 // ดึงใบเสร็จของสัญญา
-router.get('/contracts/:contractId', authCheck, staffCheck, getReceipt);
+router.get('/receipts/contracts/:contractId', authCheck, staffCheck, getReceipt);
 
 // บันทึกหมายเหตุในใบเสร็จของสัญญา
-router.put('/contracts/:contractId/note', authCheck, staffCheck, saveReceiptNote);
+router.put('/receipts/contracts/:contractId/note', authCheck, staffCheck, saveReceiptNote);
 
 // ดึงใบเสร็จทั้งหมดของหอพัก
-router.get('/dormitories/:dormId', authCheck, staffCheck, getReceiptsByDorm);
+router.get('/receipts/dormitories/:dormId', authCheck, staffCheck, getReceiptsByDorm);
 
 // ดึงหมายเหตุเริ่มต้นสำหรับใบเสร็จ
-router.get('/dormitories/:dormId/default-note', authCheck, staffCheck, getDefaultReceiptNote);
+router.get('/receipts/dormitories/:dormId/default-note', authCheck, staffCheck, getDefaultReceiptNote);
 
 // บันทึกหมายเหตุเริ่มต้นสำหรับใบเสร็จ
-router.post('/dormitories/:dormId/default-note', authCheck, staffCheck, saveDefaultReceiptNote);
+router.post('/receipts/dormitories/:dormId/default-note', authCheck, staffCheck, saveDefaultReceiptNote);
 
 // บันทึกหมายเหตุสำหรับห้องปัจจุบัน
-router.put('/dormitories/:dormId/rooms/:roomNumber/note', authCheck, staffCheck, saveReceiptNoteForRoom);
+router.put('/receipts/dormitories/:dormId/rooms/:roomNumber/note', authCheck, staffCheck, saveReceiptNoteForRoom);
 
 module.exports = router;

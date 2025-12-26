@@ -13,21 +13,21 @@ const { authCheck,superAdminCheck,ownerCheck,staffCheck } = require('../middlewa
 /* ─────────────── 🔹 รายงานรายได้ ─────────────── */
 
 // ดึงรายได้รายเดือน
-router.get('/dormitories/:dormId/monthly', authCheck, staffCheck, getMonthlyIncome);
+router.get('/income/dormitories/:dormId/monthly', authCheck, staffCheck, getMonthlyIncome);
 
 // ดึงรายได้รายปี
-router.get('/dormitories/:dormId/yearly', authCheck, staffCheck, getYearlyIncome);
+router.get('/income/dormitories/:dormId/yearly', authCheck, staffCheck, getYearlyIncome);
 
 // ดึงสรุปรายได้
-router.get('/dormitories/:dormId/summary', authCheck, staffCheck, getIncomeSummary);
+router.get('/income/dormitories/:dormId/summary', authCheck, staffCheck, getIncomeSummary);
 
 // ดึงการแยกประเภทรายได้
-router.get('/dormitories/:dormId/breakdown', authCheck, staffCheck, getIncomeBreakdown);
+router.get('/income/dormitories/:dormId/breakdown', authCheck, staffCheck, getIncomeBreakdown);
 
 // ดึงค่าธรรมเนียมบริการ
-router.get('/dormitories/:dormId/service-fees', authCheck, staffCheck, getServiceFees);
+router.get('/income/dormitories/:dormId/service-fees', authCheck, staffCheck, getServiceFees);
 
 // ดึงอัตราการเข้าพักรายเดือน
-router.get('/dormitories/:dormId/occupancy', authCheck, staffCheck, getMonthlyOccupancy);
+router.get('/income/dormitories/:dormId/occupancy', authCheck, staffCheck, getMonthlyOccupancy);
 
 module.exports = router;

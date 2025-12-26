@@ -13,7 +13,7 @@ const influxDB = new InfluxDB({ url, token });
 const queryApi = influxDB.getQueryApi(org);
 
 // API สำหรับตรวจสอบ measurement ใน InfluxDB
-router.post('/validate-measurement', authCheck, staffCheck, async (req, res) => {
+router.post('/influx/validate-measurement', authCheck, staffCheck, async (req, res) => {
   try {
     const { measurement } = req.body;
     
@@ -69,7 +69,7 @@ router.post('/validate-measurement', authCheck, staffCheck, async (req, res) => 
 });
 
 // API สำหรับดูรายการ measurement ทั้งหมดใน InfluxDB
-router.get('/measurements', authCheck, staffCheck, async (req, res) => {
+router.get('/influx/measurements', authCheck, staffCheck, async (req, res) => {
   try {
     // Query เพื่อดูรายการ measurement ทั้งหมด (ช่วง 7 วันที่ผ่านมา)
     const fluxQuery = `
@@ -112,7 +112,7 @@ router.get('/measurements', authCheck, staffCheck, async (req, res) => {
 });
 
 // API สำหรับดึงข้อมูลล่าสุดจาก InfluxDB สำหรับ measurement ที่กำหนด
-router.post('/latest-data', authCheck, staffCheck, async (req, res) => {
+router.post('/influx/latest-data', authCheck, staffCheck, async (req, res) => {
   try {
     const { measurement } = req.body;
     

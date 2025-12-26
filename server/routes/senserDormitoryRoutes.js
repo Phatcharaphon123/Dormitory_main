@@ -9,9 +9,9 @@ const {
 /* ─────────────── 🔹 เซ็นเซอร์หอพัก ─────────────── */
 
 // ดึงข้อมูลเซ็นเซอร์ทั้งหมด
-router.get('/sensor', authCheck, staffCheck, Dormitory);
+router.get('/sensor-dormitory/sensor', authCheck, staffCheck, Dormitory);
 
 // ดึงข้อมูลเซ็นเซอร์ล่าสุด
-router.get('/sensor/latest', authCheck, staffCheck, DormitoryLatest);
+router.get('/sensor-dormitory/sensor/latest', authCheck, staffCheck, DormitoryLatest);
 
 module.exports = router; 
