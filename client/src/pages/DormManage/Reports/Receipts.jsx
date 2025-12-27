@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import PaidInvoiceReceipt from "../Bills/InvoiceReceipt/PaidInvoiceReceipt";
 import PrintReceipt from "../Room/ContractPages/ContractReceipt/PrintReceipt";
-import MoveOutReceiptPrint from "../MoveOutManage/MoveOutReceipt/MoveOutReceiptPrint";
+import MoveOutReceiptPrint from "../TenantManage/MoveOutReceipt/MoveOutReceiptPrint";
 import Pagination from "../../../components/common/Pagination";
 import ExcelExportButton from "../../../components/common/ExcelExportButton";
 import { FaReceipt } from "react-icons/fa";
@@ -115,25 +115,6 @@ function Receipts() {
           date: receipt.date
         };
       });
-      
-      
-      // ตรวจสอบข้อมูลซ้ำ
-      if (allReceipts.length !== uniqueReceipts.length) {
-        // Log ข้อมูลที่ถูกลบออก
-        const removedReceipts = allReceipts.filter(receipt => 
-          !uniqueReceipts.some(unique => {
-            if (receipt.receiptNo && unique.receiptNo && receipt.receiptNo.trim() !== '' && unique.receiptNo.trim() !== '') {
-              return unique.receiptNo === receipt.receiptNo;
-            }
-            const receiptKey = `${receipt.receiptType || 'unknown'}_${receipt.payer || 'unknown'}_${receipt.room || 'unknown'}_${receipt.amount || 0}_${receipt.date || receipt.createdAt || receipt.paymentDate || receipt.moveOutDate || 'unknown'}`;
-            const uniqueKey = `${unique.receiptType || 'unknown'}_${unique.payer || 'unknown'}_${unique.room || 'unknown'}_${unique.amount || 0}_${unique.date || unique.createdAt || unique.paymentDate || unique.moveOutDate || 'unknown'}`;
-            return uniqueKey === receiptKey;
-          })
-        );
-        console.log('🗑️ Removed duplicate receipts:', removedReceipts);
-      } else {
-        console.log('✅ No duplicate receipts found');
-      }
       
       // เรียงลำดับตามลำดับที่พึ่งดำเนินการ (ล่าสุดไปเก่าสุด)
       uniqueReceipts.sort((a, b) => {

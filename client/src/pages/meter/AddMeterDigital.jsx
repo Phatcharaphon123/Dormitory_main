@@ -36,7 +36,7 @@ function AddMeterDigital({ onBack }) {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
+      const response = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRoomsData(response.data);
@@ -65,8 +65,8 @@ function AddMeterDigital({ onBack }) {
   const handleSaveMeter = async (meterData) => {
     try {
       const endpoint = meterData.type === 'electric' ? 
-        `${API_URL}/api/meters/electric` : 
-        `${API_URL}/api/meters/water`;
+        `${API_URL}/api/meters/meter-records/electric` : 
+        `${API_URL}/api/meters/meter-records/water`;
       
       // รวมวันที่และเวลาติดตั้ง
       const postData = {

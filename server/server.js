@@ -16,7 +16,6 @@ app.use('/uploads', express.static('uploads'));
 
 // step to dynamically load routes
 readdirSync('./routes')
-readdirSync('./routes')
     .filter((file) => file.endsWith('.js')) //กรองเฉพาะไฟล์ .js
     .map((c) => app.use('/api', require('./routes/' + c)))
 

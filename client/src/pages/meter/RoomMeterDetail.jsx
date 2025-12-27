@@ -39,7 +39,7 @@ function RoomMeterDetail() {
       const roomData = roomResponse.data;
       
       // ดึงข้อมูลมิเตอร์แยกต่างหาก
-      const meterResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
+      const meterResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const meterData = meterResponse.data;

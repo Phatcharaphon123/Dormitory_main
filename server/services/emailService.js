@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const pool = require('../db'); // เพิ่มการเชื่อมต่อฐานข้อมูล
+const prisma = require('../config/prisma'); // เพิ่ม Prisma client
 const pdfService = require('./pdfService'); // เพิ่ม PDF Service
 require('dotenv').config();
 
@@ -17,11 +17,16 @@ class EmailService {
 
   // ดึงข้อมูลหอพัก
   async getDormitoryInfo(dormId) {
-    const result = await pool.query(
-      'SELECT name, email, phone, address FROM dormitories WHERE dorm_id = $1',
-      [dormId]
-    );
-    return result.rows[0];
+    const dorm = await prisma.dormitories.findFirst({
+      where: { dorm_id: dormId },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        address: true
+      }
+    });
+    return dorm;
   }
 
   // สร้าง HTML template สำหรับใบแจ้งหนี้
@@ -157,35 +162,37 @@ class EmailService {
       // ดึงหมายเหตุเริ่มต้นจากฐานข้อมูล (เหมือนกับ MonthDetailBills)
       let invoiceNote = '';
       try {
-        const pool = require('../db');
-        
         // ลองดึงหมายเหตุแบบมี receipt_type ก่อน (สำหรับ monthly bills)
-        let noteQuery = `
-          SELECT note_content 
-          FROM default_receipt_notes 
-          WHERE dorm_id = $1 AND receipt_type = $2
-        `;
-        
         console.log(`🔍 ดึงหมายเหตุสำหรับ dorm_id: ${dorm_id}, receipt_type: monthly`);
-        let noteResult = await pool.query(noteQuery, [dorm_id, 'monthly']);
-        console.log(`📝 พบหมายเหตุแบบ monthly: ${noteResult.rows.length} รายการ`);
+        let noteResult = await prisma.default_receipt_notes.findFirst({
+          where: {
+            dorm_id: dorm_id,
+            receipt_type: 'monthly'
+          },
+          select: { note_content: true }
+        });
+        
+        console.log(`📝 พบหมายเหตุแบบ monthly: ${noteResult ? 1 : 0} รายการ`);
         
         // ถ้าไม่มี receipt_type = 'monthly' ลองแบบไม่ระบุ receipt_type (สำหรับข้อมูลเก่า)
-        if (noteResult.rows.length === 0) {
-          noteQuery = `
-            SELECT note_content 
-            FROM default_receipt_notes 
-            WHERE dorm_id = $1 AND (receipt_type IS NULL OR receipt_type = 'monthly')
-            ORDER BY created_at DESC 
-            LIMIT 1
-          `;
+        if (!noteResult) {
           console.log(`🔍 ดึงหมายเหตุแบบ fallback สำหรับ dorm_id: ${dorm_id}`);
-          noteResult = await pool.query(noteQuery, [dorm_id]);
-          console.log(`📝 พบหมายเหตุแบบ fallback: ${noteResult.rows.length} รายการ`);
+          noteResult = await prisma.default_receipt_notes.findFirst({
+            where: {
+              dorm_id: dorm_id,
+              OR: [
+                { receipt_type: null },
+                { receipt_type: 'monthly' }
+              ]
+            },
+            select: { note_content: true },
+            orderBy: { created_at: 'desc' }
+          });
+          console.log(`📝 พบหมายเหตุแบบ fallback: ${noteResult ? 1 : 0} รายการ`);
         }
         
-        if (noteResult.rows.length > 0 && noteResult.rows[0].note_content) {
-          invoiceNote = noteResult.rows[0].note_content;
+        if (noteResult && noteResult.note_content) {
+          invoiceNote = noteResult.note_content;
           console.log(`✅ ใช้หมายเหตุจากฐานข้อมูล: ${invoiceNote.substring(0, 100)}...`);
         } else {
           // ใช้ค่า fallback เหมือนกับ MonthDetailBills
@@ -194,20 +201,16 @@ class EmailService {
         }
       } catch (noteError) {
         console.warn('⚠️ ไม่สามารถดึงหมายเหตุจากฐานข้อมูลได้:', noteError.message);
-        // ถ้า error อาจจะเป็นเพราะไม่มี column receipt_type ลองแบบง่ายๆ
+        // ถ้า error ลองแบบง่ายๆ
         try {
-          const pool = require('../db');
-          const simpleQuery = `
-            SELECT note_content 
-            FROM default_receipt_notes 
-            WHERE dorm_id = $1 
-            ORDER BY default_receipt_note_id DESC 
-            LIMIT 1
-          `;
-          const simpleResult = await pool.query(simpleQuery, [dorm_id]);
+          const simpleResult = await prisma.default_receipt_notes.findFirst({
+            where: { dorm_id: dorm_id },
+            select: { note_content: true },
+            orderBy: { default_receipt_note_id: 'desc' }
+          });
           
-          if (simpleResult.rows.length > 0 && simpleResult.rows[0].note_content) {
-            invoiceNote = simpleResult.rows[0].note_content;
+          if (simpleResult && simpleResult.note_content) {
+            invoiceNote = simpleResult.note_content;
             console.log(`✅ ใช้หมายเหตุแบบ simple จากฐานข้อมูล: ${invoiceNote.substring(0, 100)}...`);
           } else {
             invoiceNote = 'กรุณาชำระเงินภายในวันที่ 5 ด้วยการโอนเข้าบัญชี นาย พีชพล ยอดราษ ธนาคารไทยพาณิชย์ เลขที่ 302-4-04454-7 หรือ พร้อมเพย์ 086-3427425 แล้วส่ง"สลิป"ให้อินบ็อกซ์โลน หากไม่ชำระเงินภายใน 5 วัน กรุณาเสียค่าปรับวันละ 100 บาท';
@@ -297,12 +300,15 @@ class EmailService {
 
       // บันทึกประวัติการส่งบิลสำเร็จ
       try {
-        const pool = require('../db');
-        await pool.query(
-          `INSERT INTO bill_send_history (bill_id, send_method, send_to, send_status, send_date) 
-           VALUES ($1, 'email', $2, 'sent', NOW())`,
-          [billData.invoice_receipt_id || billData.id, tenant_email]
-        );
+        await prisma.bill_send_history.create({
+          data: {
+            bill_id: billData.invoice_receipt_id || billData.id,
+            send_method: 'email',
+            send_to: tenant_email,
+            send_status: 'sent',
+            send_date: new Date()
+          }
+        });
       } catch (historyError) {
         console.log('⚠️ ไม่สามารถบันทึกประวัติการส่งได้:', historyError.message);
       }
@@ -318,12 +324,16 @@ class EmailService {
       
       // บันทึกประวัติการส่งบิลล้มเหลว
       try {
-        const pool = require('../db');
-        await pool.query(
-          `INSERT INTO bill_send_history (bill_id, send_method, send_to, send_status, send_date, error_message) 
-           VALUES ($1, 'email', $2, 'failed', NOW(), $3)`,
-          [billData.invoice_receipt_id || billData.id, billData.tenant_email, error.message]
-        );
+        await prisma.bill_send_history.create({
+          data: {
+            bill_id: billData.invoice_receipt_id || billData.id,
+            send_method: 'email',
+            send_to: billData.tenant_email,
+            send_status: 'failed',
+            send_date: new Date(),
+            error_message: error.message
+          }
+        });
       } catch (historyError) {
         console.log('⚠️ ไม่สามารถบันทึกประวัติการส่งที่ล้มเหลวได้:', historyError.message);
       }

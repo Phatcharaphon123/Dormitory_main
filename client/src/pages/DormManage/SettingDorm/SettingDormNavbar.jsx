@@ -11,11 +11,8 @@ function SettingDormNavbar() {
   const { dormId } = useParams(); // ดึง dormId จาก URL parameter
   const [selectedMenu, setSelectedMenu] = useState('settingDormInfo'); // ตั้งค่าเริ่มต้นเป็น 'settingDormInfo'
 
-  console.log('🏢 SettingDormNavbar dormId:', dormId, typeof dormId);
-
   // ฟังก์ชันการเลือกเมนู
   const handleMenuSelect = (menu) => {
-    console.log('🎯 Selected menu:', menu, 'with dormId:', dormId);
     setSelectedMenu(menu);
   };
 

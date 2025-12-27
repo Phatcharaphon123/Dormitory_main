@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -130,7 +130,7 @@ model dorm_staffs {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model invoice_receipt_items {
-  invoice_receipt_item_id Int               @id(map: "invoice_items_pkey1") @default(autoincrement())
+  invoice_receipt_item_id Int               @id @default(autoincrement())
   invoice_receipt_id      Int?
   item_type               String
   description             String
@@ -141,7 +141,7 @@ model invoice_receipt_items {
 }
 
 model invoice_receipts {
-  invoice_receipt_id    Int                     @id(map: "invoice_items_pkey") @default(autoincrement())
+  invoice_receipt_id    Int                     @id @default(autoincrement())
   monthly_invoice_id    Int?
   dorm_id               Int?
   utility_rate_id       Int?
@@ -167,7 +167,7 @@ model invoice_receipts {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model meter_electricity {
   room_id                Int       @id
-  electricity_meter_code String?   @db.VarChar
+  electricity_meter_code String?   @db.VarChar(50)
   updated_at             DateTime? @db.Timestamp(6)
   installation_date      DateTime? @default(now()) @db.Timestamp(6)
   rooms                  rooms     @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
@@ -212,7 +212,7 @@ model meter_records {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model meter_water {
   room_id           Int       @id
-  water_meter_code  String?   @db.VarChar
+  water_meter_code  String?   @db.VarChar(50)
   updated_at        DateTime? @db.Timestamp(6)
   installation_date DateTime? @default(now()) @db.Timestamp(6)
   rooms             rooms     @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
@@ -222,7 +222,7 @@ model monthly_invoices {
   monthly_invoice_id Int                @id @default(autoincrement())
   meter_record_id    Int?
   dorm_id            Int?
-  issue_date         DateTime           @default(dbgenerated("CURRENT_DATE")) @db.Date
+  issue_date         DateTime           @db.Date
   due_date           DateTime           @db.Date
   month              DateTime           @db.Date
   charge_per_day     Decimal?           @default(50.00) @db.Decimal(10, 2)
@@ -234,7 +234,7 @@ model monthly_invoices {
 }
 
 model monthly_service {
-  monthly_service_id Int       @id(map: "contract_services_pkey") @default(autoincrement())
+  monthly_service_id Int       @id @default(autoincrement())
   contract_id        Int
   service_name       String    @db.VarChar(255)
   service_price      Decimal   @default(0.00) @db.Decimal(10, 2)
@@ -242,7 +242,7 @@ model monthly_service {
   is_active          Boolean   @default(true)
   created_at         DateTime? @default(now()) @db.Timestamp(6)
   updated_at         DateTime? @default(now()) @db.Timestamp(6)
-  contracts          contracts @relation(fields: [contract_id], references: [contract_id], onDelete: Cascade, onUpdate: NoAction, map: "contract_services_contract_id_fkey")
+  contracts          contracts @relation(fields: [contract_id], references: [contract_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([is_active], map: "idx_contract_services_active")
   @@index([contract_id], map: "idx_contract_services_contract_id")
@@ -250,7 +250,7 @@ model monthly_service {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model move_in_receipt_items {
-  move_in_receipt_item_id Int               @id(map: "receipt_items_pkey") @default(autoincrement())
+  move_in_receipt_item_id Int               @id @default(autoincrement())
   move_in_receipt_id      Int?
   item_type               String            @db.VarChar(50)
   description             String
@@ -265,9 +265,9 @@ model move_in_receipt_items {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model move_in_receipts {
-  move_in_receipt_id    Int                     @id(map: "receipts_pkey") @default(autoincrement())
+  move_in_receipt_id    Int                     @id @default(autoincrement())
   contract_id           Int?
-  receipt_number        String                  @unique(map: "receipts_receipt_number_key") @db.VarChar(50)
+  receipt_number        String                  @unique @db.VarChar(50)
   total_amount          Decimal                 @db.Decimal(10, 2)
   payment_method        String?                 @default("cash") @db.VarChar(50)
   receipt_date          DateTime                @db.Date
@@ -303,7 +303,7 @@ model move_out_receipts {
   receipt_number         String                   @unique @db.VarChar(50)
   net_amount             Decimal                  @db.Decimal(10, 2)
   payment_method         String?                  @default("เงินสด") @db.VarChar(50)
-  receipt_date           DateTime                 @default(dbgenerated("CURRENT_DATE")) @db.Date
+  receipt_date           DateTime                 @db.Date
   move_out_date          DateTime?                @db.Date
   receipt_note           String?
   created_at             DateTime?                @default(now()) @db.Timestamp(6)
@@ -319,7 +319,7 @@ model move_out_receipts {
 
 model payments {
   payment_id         Int              @id @default(autoincrement())
-  invoice_receipt_id Int
+  invoice_receipt_id Int?
   payment_method     String           @default("เงินสด") @db.VarChar(50)
   payment_amount     Decimal          @db.Decimal(10, 2)
   payment_date       DateTime         @db.Date
@@ -327,7 +327,7 @@ model payments {
   receipt_number     String           @unique @db.VarChar(100)
   created_at         DateTime?        @default(now()) @db.Timestamp(6)
   updated_at         DateTime?        @default(now()) @db.Timestamp(6)
-  invoice_receipts   invoice_receipts @relation(fields: [invoice_receipt_id], references: [invoice_receipt_id], onDelete: SetNull, onUpdate: NoAction)
+  invoice_receipts   invoice_receipts? @relation(fields: [invoice_receipt_id], references: [invoice_receipt_id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([invoice_receipt_id], map: "idx_payments_invoice_id")
   @@index([payment_date], map: "idx_payments_payment_date")

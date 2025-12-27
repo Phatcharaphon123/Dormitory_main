@@ -678,10 +678,12 @@ exports.getTerminatedContracts = async (req, res) => {
   try {
     const { dormId } = req.params;
     
+    console.log('🏠 getTerminatedContracts called with dormId:', dormId);
+    
     const result = await prisma.contracts.findMany({
       where: {
         rooms: {
-          dormitory_id: parseInt(dormId)
+          dorm_id: parseInt(dormId)
         },
         status: 'terminated'
       },
@@ -733,8 +735,9 @@ exports.getTerminatedContracts = async (req, res) => {
     res.json(terminatedContracts);
 
   } catch (err) {
-    console.error('Error fetching terminated contracts:', err);
-    res.status(500).json({ error: 'Error fetching terminated contracts' });
+    console.error('❌ Error fetching terminated contracts:', err);
+    console.error('❌ Stack trace:', err.stack);
+    res.status(500).json({ error: 'Error fetching terminated contracts: ' + err.message });
   }
 };
 

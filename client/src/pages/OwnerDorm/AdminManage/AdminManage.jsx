@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaPlus, FaEdit, FaTrash, FaUserTie, FaSearch, FaBuilding } from "react-icons/fa";
 import API_URL from "../../../config/api";
+import Swal from "sweetalert2";
 
 const AdminManage = () => {
   // --- 1. Mock Data (ข้อมูลสมมติของคุณ) ---
@@ -96,10 +97,10 @@ const AdminManage = () => {
     if (modalMode === "add") {
       // เช็ค password confirmation
       if (currentAdmin.password !== confirmPassword) {
-        alert('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+        Swal.fire({ icon: 'warning', title: 'รหัสผ่านไม่ตรงกัน', text: 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน' });
         return;
       }
-      
+
       const payload = {
         username: currentAdmin.username,
         email: currentAdmin.email,
@@ -107,21 +108,21 @@ const AdminManage = () => {
         phone: currentAdmin.phone,
         dormId: currentAdmin.dormId
       };
-      
+
       try {
         const token = localStorage.getItem('token');
         await axios.post(`${API_URL}/api/admin`, payload, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-        alert('สร้าง Admin สำเร็จ');
+        Swal.fire({ icon: 'success', title: 'สร้าง Admin สำเร็จ', timer: 1200, showConfirmButton: false });
         setShowModal(false);
         fetchAdmins(); // รีเฟรชข้อมูล
       } catch (err) {
         console.error('Create admin error:', err);
         if (err.response && err.response.data && err.response.data.error) {
-          alert(err.response.data.error);
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.response.data.error });
         } else {
-          alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์' });
         }
       }
     } else {
@@ -134,20 +135,20 @@ const AdminManage = () => {
         dormId: currentAdmin.dormId,
         enabled: currentAdmin.enabled
       };
-      
+
       try {
         await axios.put(`${API_URL}/api/admin/${currentAdmin.userId}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        alert('อัปเดต Admin สำเร็จ');
+        Swal.fire({ icon: 'success', title: 'อัปเดต Admin สำเร็จ', timer: 1200, showConfirmButton: false });
         setShowModal(false);
         fetchAdmins(); // รีเฟรชข้อมูล
       } catch (err) {
         console.error('Update admin error:', err);
         if (err.response && err.response.data && err.response.data.error) {
-          alert(err.response.data.error);
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.response.data.error });
         } else {
-          alert('เกิดข้อผิดพลาดในการอัปเดต Admin');
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'เกิดข้อผิดพลาดในการอัปเดต Admin' });
         }
       }
     }
@@ -155,23 +156,29 @@ const AdminManage = () => {
 
   // ฟังก์ชันลบ admin
   const handleDelete = async (adminId) => {
-    if (!window.confirm('คุณแน่ใจว่าต้องการลบ Admin นี้หรือไม่?')) {
-      return;
-    }
+    const result = await Swal.fire({
+      title: 'คุณแน่ใจหรือไม่?',
+      text: 'ต้องการลบ Admin นี้หรือไม่? การลบนี้ไม่สามารถย้อนกลับได้',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ใช่, ลบเลย',
+      cancelButtonText: 'ยกเลิก'
+    });
+    if (!result.isConfirmed) return;
 
     const token = localStorage.getItem('token');
     try {
       await axios.delete(`${API_URL}/api/admin/${adminId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('ลบ Admin สำเร็จ');
+      Swal.fire({ icon: 'success', title: 'ลบ Admin สำเร็จ', timer: 1200, showConfirmButton: false });
       fetchAdmins(); // รีเฟรชข้อมูล
     } catch (err) {
       console.error('Delete admin error:', err);
       if (err.response && err.response.data && err.response.data.error) {
-        alert(err.response.data.error);
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.response.data.error });
       } else {
-        alert('เกิดข้อผิดพลาดในการลบ Admin');
+        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'เกิดข้อผิดพลาดในการลบ Admin' });
       }
     }
   };

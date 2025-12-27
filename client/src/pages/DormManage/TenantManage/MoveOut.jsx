@@ -281,7 +281,6 @@ function MoveOut() {
       alert('ไม่พบข้อมูลสัญญา กรุณาลองอีกครั้ง');
       return;
     }
-    console.log('Navigating to MoveOutDetail for contract:', { contractId, item });
     navigate(`/dorm/${dormId}/move-out/detail/${contractId}`);
   };
 

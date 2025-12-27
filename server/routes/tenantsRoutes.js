@@ -22,7 +22,7 @@ router.put('/tenants/:tenantId', authCheck, adminCheck, updateTenant);
 router.get('/tenants/dormitories/:dormId/summary', authCheck, adminCheck, getTenantSummary);
 
 // ดึงอัตราการเข้าพักรายเดือน
-router.get('/dormitories/:dormId/occupancy', authCheck, adminCheck, getMonthlyOccupancy);
+router.get('/tenants/dormitories/:dormId/occupancy', authCheck, adminCheck, getMonthlyOccupancy);
 
 // ดึงประเภทห้อง
 router.get('/tenants/dormitories/:dormId/room-types', authCheck, adminCheck, getRoomTypes);

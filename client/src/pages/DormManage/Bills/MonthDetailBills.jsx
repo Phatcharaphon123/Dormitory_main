@@ -61,9 +61,6 @@ function MonthDetailBills() {
     onConfirm: null
   });
 
-  // เพิ่มการตรวจสอบ parameters
-  console.log('🔍 MonthDetailBills Parameters:', { dormId, invoiceId });
-
   // ตรวจสอบว่า invoiceId เป็นตัวเลขที่ถูกต้อง
   if (!invoiceId || invoiceId === 'undefined' || invoiceId.includes(':')) {
     console.error('❌ Invalid invoiceId:', invoiceId);
@@ -89,8 +86,6 @@ function MonthDetailBills() {
         setLoading(true);
         setError(null);
         
-        console.log('🔍 กำลังดึงข้อมูลใบแจ้งหนี้:', { dormId, invoiceId });
-        
         const res = await axios.get(`${API_URL}/api/bills/dormitories/${dormId}/invoices/${invoiceId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -98,7 +93,6 @@ function MonthDetailBills() {
         });
         
         const data = res.data;
-        console.log('✅ ข้อมูลใบแจ้งหนี้ (อัพเดท):', data);
 
         // ตรวจสอบว่ามีข้อมูล
         if (!data || !data.invoice) {
@@ -110,13 +104,6 @@ function MonthDetailBills() {
 
         const bill = data.invoice;
         const invoiceItems = data.invoice_items || [];
-
-        console.log('📋 Invoice status from API:', {
-          status: bill.status,
-          total_paid: bill.total_paid,
-          balance: bill.balance,
-          total: bill.total
-        });
 
         const formattedItems = invoiceItems.map((item, index) => {
           // ดึงจำนวนหน่วยจาก API - ✅ รองรับค่า 0
@@ -161,17 +148,6 @@ function MonthDetailBills() {
       
       // ตรวจสอบสถานะการชำระเงิน
       const isPaid = bill.status === 'paid' || finalBalance <= 0;
-      
-      console.log('💰 Payment calculation:', {
-        apiTotal,
-        apiPaid,
-        apiBalance,
-        calculatedTotal,
-        finalTotal,
-        finalBalance,
-        isPaid,
-        status: bill.status
-      });
 
       setInvoiceData({
         dormInfo: {
@@ -259,7 +235,6 @@ function MonthDetailBills() {
       
       if (response.status === 200) {
         const data = response.data;
-        console.log('✅ ข้อมูลประวัติการชำระเงิน:', data);
         setPaymentHistory(Array.isArray(data) ? data : []);
       }
     } catch (error) {
@@ -364,31 +339,6 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
 
   // เพิ่ม state สำหรับการส่งอีเมล
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-
-  // โหลดข้อมูลเมื่อ invoiceData เปลี่ยน
-  useEffect(() => {
-    if (invoiceData && invoiceItems.length > 0) {
-      console.log('🔄 Invoice data updated:', {
-        status: invoiceData.status,
-        balance: invoiceData.receipt?.balance,
-        total: invoiceData.total,
-        itemsCount: invoiceItems.length,
-        paymentHistoryCount: paymentHistory.length
-      });
-    }
-  }, [invoiceData, invoiceItems, paymentHistory]);
-
-  // useEffect สำหรับติดตามการเปลี่ยนแปลงของ payment status
-  useEffect(() => {
-    if (invoiceData?.status) {
-      console.log('📊 Current invoice status:', {
-        status: invoiceData.status,
-        isPaid: invoiceData.status === 'paid',
-        balance: invoiceData.receipt?.balance,
-        currentBalance: calculateCurrentBalance()
-      });
-    }
-  }, [invoiceData?.status, paymentHistory]);
 
   // โหลดรายการใบแจ้งหนี้เมื่อ invoiceData เปลี่ยน
   useEffect(() => {
@@ -711,17 +661,6 @@ const showConfirmation = (title, message, onConfirm, type = 'normal') => {
       const currentBalance = calculateCurrentBalance();
       const currentTotal = calculateTotal(invoiceItems);
       const totalPaid = paymentHistory.reduce((sum, payment) => sum + payment.amount, 0);
-      
-      console.log('💰 Frontend Payment Debug:', {
-        dormId,
-        invoiceId,
-        currentTotal,
-        totalPaid,
-        currentBalance,
-        invoiceDataTotal: invoiceData.total,
-        invoiceDataBalance: invoiceData?.receipt?.balance,
-        paymentData
-      });
       
       // ตรวจสอบว่ายังมียอดค้างชำระหรือไม่
       if (currentBalance <= 0) {

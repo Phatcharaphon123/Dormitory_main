@@ -69,7 +69,7 @@ function MonthlyContract() {
         const token = localStorage.getItem('token');
         
         // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-        const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
+        const metersResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${dormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -503,7 +503,7 @@ function MonthlyContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

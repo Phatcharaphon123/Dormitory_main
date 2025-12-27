@@ -10,6 +10,7 @@ import {
   FaReceipt,
   FaUsers,
 } from "react-icons/fa";
+import { BsFillPeopleFill } from "react-icons/bs";
 import { IoCalendar, IoNewspaper, IoSpeedometer, IoFileTrayFullSharp } from "react-icons/io5";
 import { MdSaveAs, MdGasMeter } from "react-icons/md";
 import { TbLayoutDashboardFilled } from "react-icons/tb";
@@ -49,9 +50,10 @@ function DormSidebar() {
       icon: <PiBuildingApartmentFill size={20}/> 
     },
     {
-      label: "การย้ายออก",
-      icon: <FaPersonWalkingLuggage size={20}/>,
+      label: "จัดการผู้เช่า",
+      icon: <BsFillPeopleFill size={20}/>,
       submenu: [
+        { label: "รายชื่อผู้เช่า", path: `/tenants/${dormId}`, icon: <FaPersonWalkingLuggage size={16}/> },
         { label: "รอย้ายออก", path: `/moveout/${dormId}`, icon: <BsPersonFillExclamation size={16}/> },
         { label: "ย้ายออกแล้ว", path: `/moveout/completed/${dormId}`, icon: <BsPersonFillX size={16}/> },
       ]

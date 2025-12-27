@@ -75,6 +75,13 @@ function Income({ building }) {
       const baseUrl = API_URL
       const token = localStorage.getItem('token')
       
+      // ตรวจสอบว่ามี token หรือไม่
+      if (!token) {
+        console.error('No authentication token found')
+        // อาจจะ redirect ไปหน้า login หรือแสดง error message
+        return
+      }
+
       // Fetch data in parallel including service fees
       const [summaryRes, monthlyRes, yearlyRes, breakdownRes, serviceFeesRes, occupancyRes] = await Promise.all([
         axios.get(`${baseUrl}/api/income/dormitories/${dormId}/summary`, {
@@ -172,7 +179,25 @@ function Income({ building }) {
       }
 
     } catch (error) {
-      console.error('Error fetching income data:', error)
+      console.error('Error fetching income data:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers
+        }
+      })
+      
+      // ถ้าเป็น 401 Unauthorized อาจจะต้อง redirect ไป login
+      if (error.response?.status === 401) {
+        console.warn('Authentication failed. Token may be expired.')
+        // เคลียร์ token ที่หมดอายุ
+        localStorage.removeItem('token')
+        // อาจจะ redirect ไปหน้า login หรือแสดง notification
+      }
     } finally {
       setLoading(false)
     }

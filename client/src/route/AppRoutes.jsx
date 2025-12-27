@@ -15,6 +15,7 @@ import ProtectedRoute from "./ProtectedRoute";
 // Layouts
 import LayoutDormManage from "../layouts/LayoutDormManage";
 import LayoutOwnerDorm from "../layouts/LayoutOwnerDorm";
+import LayoutTenant from "../layouts/LayoutTenant";
 
 // Main pages
 import DormView from "../pages/OwnerDorm/ManageDorm/DormView";
@@ -35,16 +36,16 @@ import MonthlyContract from "../pages/DormManage/Room/ContractPages/MonthlyContr
 import MonthlyBills from "../pages/DormManage/Room/ContractPages/ContractReceipt/ReceiptPrint";
 import ContractDetail from "../pages/DormManage/Room/ContractPages/ContractDetail";
 import CancelContract from "../pages/DormManage/Room/ContractPages/CancelContract";
-import MoveOutReceipt from "../pages/DormManage/MoveOutManage/MoveOutReceipt/MoveOutReceipt";
-import MoveOutDetail from "../pages/DormManage/MoveOutManage/MoveOutDetail";
+import MoveOutReceipt from "../pages/DormManage/TenantManage/MoveOutReceipt/MoveOutReceipt";
+import MoveOutDetail from "../pages/DormManage/TenantManage/MoveOutDetail";
 import MeterReading from "../pages/meter/MeterReading";
 import CreateMeterReading from "../pages/meter/CreateMeterReading";
 import EditMeterReading from "../pages/meter/EditMeterReading";
 import RealTimeMeter from "../pages/meter/RealTimeMeter";
 import RoomMeterDetail from "../pages/meter/RoomMeterDetail";
 import AddMeterDigital from "../pages/meter/AddMeterDigital";
-import MoveOuWaitforMoveOut from "../pages/DormManage/MoveOutManage/WaitforMoveOut";
-import MoveOut from "../pages/DormManage/MoveOutManage/MoveOut";
+import MoveOuWaitforMoveOut from "../pages/DormManage/TenantManage/WaitforMoveOut";
+import MoveOut from "../pages/DormManage/TenantManage/MoveOut";
 import Receipts from "../pages/DormManage/Reports/Receipts";
 import MonthlyBillsReport from "../pages/DormManage/Reports/MonthlyBillsReport";
 import TenantReport from "../pages/DormManage/Reports/TenantReport";
@@ -147,8 +148,24 @@ const router = createBrowserRouter([
       { path: "/reports/monthly-bills/:dormId", element: <MonthlyBillsReport /> },
       { path: "/reports/tenant/:dormId", element: <TenantReport /> },
       { path: "/reports/utility-summary/:dormId", element: <UtilitySummaryReport /> },
+
+      // Tenant Routes (ถ้าจำเป็นต้องให้ Owner/Admin ดูข้อมูลผู้เช่า)
     ],
   },
+
+  // -----------------------------------------------------------
+  // 5. กลุ่ม TENANT (ผู้เช่า)
+  // -----------------------------------------------------------
+  {
+    element: (
+      <ProtectedRoute allowedRoles={['TENANT', 'OWNER', 'ADMIN', 'SUPER_ADMIN']}>
+        <LayoutTenant />
+      </ProtectedRoute>
+    ),
+    children: [
+
+    ],
+  },  
 ]);
 
 const AppRoutes = () => {

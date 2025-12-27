@@ -107,11 +107,6 @@ function CancelContract() {
       
       // หากเป็นข้อมูลจริง ให้ set เลย (ไม่ต้องมี .success)
       if (result) {
-        console.log('🔍 Debug: contractData received:', result);
-        console.log('🔍 Debug: first_name:', result.first_name);
-        console.log('🔍 Debug: last_name:', result.last_name);
-        console.log('🔍 Debug: deposit_monthly:', result.deposit_monthly);
-        
         // ดึงข้อมูลบิลค้างชำระ
         if (result.contract_id) {
           try {
@@ -214,7 +209,7 @@ function CancelContract() {
         const token = localStorage.getItem('token');
         
         // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-        const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
+        const metersResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${finalDormId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -392,7 +387,7 @@ function CancelContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${finalDormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -496,7 +491,7 @@ function CancelContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${finalDormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -564,7 +559,7 @@ function CancelContract() {
       const token = localStorage.getItem('token');
       
       // ดึงข้อมูลมิเตอร์ที่ติดตั้งในห้องนี้
-      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${finalDormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${finalDormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -931,14 +926,11 @@ function CancelContract() {
 
   // ฟังก์ชันสำหรับยืนยันยกเลิกสัญญา (หลังจากกด confirm ใน popup)
   const handleConfirmCancel = async () => {
-    console.log('🚀 เริ่มต้น handleConfirmCancel');
-    
+
     // ปิด popup ยืนยัน
     setShowConfirmPopup(false);
     setIsProcessing(true);
-    
-    // ไม่ต้องแสดง Toast เพิ่ม เพราะแสดงไปแล้วใน popup click
-    console.log('📱 เริ่มประมวลผลข้อมูล...');
+
     
     // Validation: ตรวจสอบว่ามีการระบุค่าน้ำค่าไฟหรือไม่
     const hasWaterCharge = meterCharges.some(item => item.meterType === 'water' || item.description.includes('ค่าน้ำ:'));

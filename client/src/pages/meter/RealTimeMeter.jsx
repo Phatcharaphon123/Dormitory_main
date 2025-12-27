@@ -39,7 +39,7 @@ function RealTimeMeter() {
       });
       
       // ดึงข้อมูลมิเตอร์
-      const metersResponse = await axios.get(`${API_URL}/api/meters/dormitories/${dormId}`, {
+      const metersResponse = await axios.get(`${API_URL}/api/meters/meter-records/dormitories/${dormId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

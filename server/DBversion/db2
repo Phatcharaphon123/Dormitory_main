@@ -481,3 +481,4 @@ enum meter_type {
 }
 
 // เพิ่ม role
+// ของ postgres 

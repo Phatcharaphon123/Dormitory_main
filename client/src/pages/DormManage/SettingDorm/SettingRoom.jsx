@@ -108,7 +108,6 @@ function SettingRoom() {
       }
     })
       .then((response) => {
-        console.log('✅ Room types loaded:', response.data);
         setRoomTypeData(response.data);
       })
       .catch((err) => {

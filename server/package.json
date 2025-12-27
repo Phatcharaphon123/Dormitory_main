@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "db.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
@@ -25,6 +25,7 @@
     "luxon": "^3.7.2",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "mysql2": "^3.16.0",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5",
     "pg": "^8.16.0",

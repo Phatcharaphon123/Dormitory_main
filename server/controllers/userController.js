@@ -68,10 +68,15 @@ exports.register = async (req, res) => {
       },
     });
 
-    res.status(200).json(newUser);
+    res.status(200).json({
+      success: true,
+      message: "สมัครสมาชิกสำเร็จ",
+      data: newUser,
+    });
   } catch (error) {
     console.error("Register error:", error);
     res.status(500).json({
+      success: false,
       message: "เกิดข้อผิดพลาดในการสมัครสมาชิก",
     });
   }

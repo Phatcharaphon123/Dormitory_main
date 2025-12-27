@@ -155,8 +155,8 @@ function AddEditMeterForm({ room, meterType, onClose, onSave, onDelete }) {
     setIsSubmitting(true);
     try {
       const endpoint = formData.type === 'electric' ? 
-        `${API_URL}/api/meters/electric/${formData.roomId}` : 
-        `${API_URL}/api/meters/water/${formData.roomId}`;
+        `${API_URL}/api/meters/meter-records/electric/${formData.roomId}` : 
+        `${API_URL}/api/meters/meter-records/water/${formData.roomId}`;
       
       const token = localStorage.getItem('token');
       await axios.delete(endpoint, {
